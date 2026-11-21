@@ -6,9 +6,9 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 
 ---
 
-## ✨ Principais Recursos
+##  Principais Recursos
 
-### 🖥️ Experiência de Desktop Companion
+###  Experiência de Desktop Companion
 * **Overlay transparente sem bordas** (`alwaysOnTop`, sem sombra retangular do Windows) com **click-through inteligente** nas áreas transparentes ao redor da personagem.
 * **System Tray (bandeja do Windows)** com menu rápido (*Abrir Chat*, *Configurações & Memória*, *Passeio Automático*, *Iniciar com o Windows*, *Sempre no Topo*, *Mostrar/Esconder*).
 * **Modo Tela Limpa + Atalho Global `Alt + A`:** balão e chat recolhem automaticamente após alguns segundos, deixando apenas a Aster flutuando na tela.
@@ -19,14 +19,14 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
   * **Sentar nas janelas abertas:** ao soltar perto da borda superior de uma janela — ou por vontade própria — ela encaixa sentada em cima da guia e desce automaticamente se a janela fechar/minimizar.
   * **Headpat / Carinho:** passar o mouse na cabeça dela solta partículas roxas e reações curtas.
 
-### 🧠 IA Híbrida, Memória e RAG Local
+###  IA Híbrida, Memória e RAG Local
 * **Cérebro Local ([Ollama](https://ollama.com/)):** respostas rápidas no estilo da personagem (ex: `qwen3:4b-instruct`) com emissão de tags de humor e ação.
 * **Escalonamento Remoto (Kaida / Hermes):** delega tarefas pesadas de código ou pesquisa para uma API compatível com OpenAI (`/kaida ...` ou *"peça para a Kaida..."*).
 * **Memória Persistente (`memory.json`):** salva, lista e apaga fatos e preferências entre sessões (por chat, voz ou painel visual).
 * **Base de Documentos Locais (`docs/` — RAG):** busca instantânea em Rust nos arquivos `.txt`, `.md`, `.json`, `.csv` e `.log` colocados em `docs/`, injetando trechos relevantes no contexto automaticamente.
 * **Comentários espontâneos:** comentários curtos ocasionais baseados no horário e na janela ativa (com detecção de **tela cheia** para nunca atrapalhar jogos ou vídeos).
 
-### ⚡ Automação no Windows 11 e Voz (STT)
+###  Automação no Windows 11 e Voz (STT)
 * **Ações nativas em Rust:** abertura segura de aplicativos e URLs (`ShellExecuteW`), controle de mídia e volume em <1 ms via Win32 (`keybd_event`), leitura nativa do `Ctrl+C` (`arboard`).
 * **Integrações:** busca e reprodução no **Spotify** via Windows UI Automation, envio de mensagens no **WhatsApp** e **Discord DM** preservando o clipboard, e postagem em **Discord Webhook**.
 * **Escuta por voz offline (STT):** captura a 16 kHz com VAD adaptativo, wake-word `"Aster"` e worker persistente em Python com `faster-whisper` (`int8` na CPU), gerenciado e encerrado limpinho pelo Rust.
@@ -34,7 +34,7 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 
 ---
 
-## 🛠️ Stack
+##  Stack
 
 * **Desktop & Backend:** Rust + [Tauri v2](https://v2.tauri.app/) + Win32 APIs (`user32`, `shell32`, `dwmapi`)
 * **Frontend:** HTML5, CSS3 e JavaScript puro (WebView2 nativo do Windows 11)
@@ -43,7 +43,7 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 
 ---
 
-## 🚀 Como Rodar Localmente (Windows 11)
+##  Como Rodar Localmente (Windows 11)
 
 ### Pré-requisitos
 * [Node.js](https://nodejs.org/) (v18+)
@@ -73,7 +73,7 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 
 ---
 
-## 📁 Estrutura do Projeto
+##  Estrutura do Projeto
 
 ```text
 Aster-Companion/
