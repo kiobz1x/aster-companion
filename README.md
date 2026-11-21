@@ -21,7 +21,7 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 
 ###  IA Híbrida, Memória e RAG Local
 * **Cérebro Local ([Ollama](https://ollama.com/)):** respostas rápidas no estilo da personagem (ex: `qwen3:4b-instruct`) com emissão de tags de humor e ação.
-* **Escalonamento Remoto (Kaida / Hermes):** delega tarefas pesadas de código ou pesquisa para uma API compatível com OpenAI (`/kaida ...` ou *"peça para a Kaida..."*).
+* **Escalonamento Remoto (Hermes):** delega tarefas pesadas de código ou pesquisa para uma API compatível com OpenAI (`/kaida ...` ou *"peça para a Kaida..."*). (foi o nome que dei ao bot conectado ao hermes no meu computador)
 * **Memória Persistente (`memory.json`):** salva, lista e apaga fatos e preferências entre sessões (por chat, voz ou painel visual).
 * **Base de Documentos Locais (`docs/` — RAG):** busca instantânea em Rust nos arquivos `.txt`, `.md`, `.json`, `.csv` e `.log` colocados em `docs/`, injetando trechos relevantes no contexto automaticamente.
 * **Comentários espontâneos:** comentários curtos ocasionais baseados no horário e na janela ativa (com detecção de **tela cheia** para nunca atrapalhar jogos ou vídeos).
@@ -39,7 +39,7 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 * **Desktop & Backend:** Rust + [Tauri v2](https://v2.tauri.app/) + Win32 APIs (`user32`, `shell32`, `dwmapi`)
 * **Frontend:** HTML5, CSS3 e JavaScript puro (WebView2 nativo do Windows 11)
 * **STT (opcional):** Python 3.12 + `faster-whisper` (`int8` CPU)
-* **IA:** Ollama (local) + API OpenAI-compatible (Hermes / Kaida)
+* **IA:** Ollama (local) + API OpenAI-compatible (Hermes)
 
 ---
 
