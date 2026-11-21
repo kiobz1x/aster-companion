@@ -1,9 +1,18 @@
+
+
+
+
+https://github.com/user-attachments/assets/54915b5e-a8fd-4ffe-995d-1aa896bafff4
+
+
+
 # ✦ Aster Companion
 
 Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Rust + HTML/CSS/JS)** com foco em leveza, animações interativas estilo *desktop pet* e automação real do sistema com IA híbrida.
 
 > Inspirado no projeto open-source [capri-desktop](https://github.com/lachydotmcg/capri-desktop).
 
+https://github.com/user-attachments/assets/3f6774a4-19d1-4caa-94d6-4fd9755618e9
 ---
 
 ##  Principais Recursos
