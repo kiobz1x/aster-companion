@@ -1,0 +1,14 @@
+{
+  "name": "aster-companion",
+  "version": "1.0.0",
+  "description": "Aster Companion - Assistente de Desktop para Windows 11 (Tauri v2)",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:exe": "powershell -NoProfile -ExecutionPolicy Bypass -File build_exe.ps1",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

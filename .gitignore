@@ -1,0 +1,23 @@
+# Segredos e dados pessoais (NUNCA subir para o Git)
+.env
+memory.json
+docs/
+
+# Binários compilados (suba o Aster.exe na aba Releases do GitHub)
+Aster.exe
+
+# Dependências e caches de build
+node_modules/
+.venv/
+src-tauri/target/
+src-tauri/gen/
+
+# Áudios temporários
+*.wav
+*.mp3
+
+# Scripts pontuais locais de recorte/ícone (opcional)
+gerar_icone.js
+preparar_sprites.js
+reparar_sprites.js
+aster_sheet.jpg

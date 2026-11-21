@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Aster • Configurações</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body {
+      background: #0d0b14;
+      color: #f4f4f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(109, 40, 217, 0.16), transparent);
+    }
+    header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #ddd6fe;
+    }
+    header span {
+      font-size: 11px;
+      color: #a1a1aa;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 10px 20px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #e4e4e7; }
+    .tab-btn.active {
+      color: #c4b5fd;
+      border-bottom-color: #8b5cf6;
+    }
+
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+    }
+    main::-webkit-scrollbar { width: 5px; }
+    main::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.35); border-radius: 4px; }
+
+    .panel { display: none; flex-direction: column; gap: 12px; }
+    .panel.active { display: flex; }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #c4b5fd;
+    }
+    .field small {
+      font-size: 10.5px;
+      color: #71717a;
+    }
+    input[type="text"], input[type="password"], select {
+      background: #171324;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 8px;
+      color: #f4f4f5;
+      font-size: 12.5px;
+      padding: 8px 10px;
+      outline: none;
+      width: 100%;
+    }
+    input:focus, select:focus { border-color: #a78bfa; }
+
+    .row { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      background: linear-gradient(135deg, #6d28d9, #4c1d95);
+      color: #f5f3ff;
+      border: 1px solid rgba(196, 181, 253, 0.3);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { filter: brightness(1.15); }
+    .btn-ghost {
+      background: rgba(139, 92, 246, 0.14);
+      color: #c4b5fd;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      padding: 5px 9px;
+      font-size: 11.5px;
+    }
+
+    .mem-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-top: 4px;
+    }
+    .mem-item {
+      background: #171324;
+      border: 1px solid rgba(139, 92, 246, 0.22);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12.5px;
+      line-height: 1.35;
+    }
+    .mem-empty {
+      color: #71717a;
+      font-size: 12px;
+      text-align: center;
+      padding: 24px 10px;
+      border: 1px dashed rgba(139, 92, 246, 0.25);
+      border-radius: 8px;
+    }
+
+    footer {
+      padding: 12px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #110e1b;
+    }
+    #status-msg {
+      font-size: 12px;
+      color: #a78bfa;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>✦ Aster Companion</h1>
+    <span>Configurações &amp; Memória</span>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="ia">IA &amp; Conexões</button>
+    <button class="tab-btn" data-tab="voz">Voz</button>
+    <button class="tab-btn" data-tab="memoria">Memórias</button>
+    <button class="tab-btn" data-tab="docs">Docs (RAG)</button>
+  </div>
+
+  <main>
+    <section id="tab-ia" class="panel active">
+      <div class="field">
+        <label>Ollama URL</label>
+        <input id="ollama_url" type="text" placeholder="http://127.0.0.1:11434/api/chat" />
+      </div>
+      <div class="field">
+        <label>Modelo Local (Ollama)</label>
+        <input id="ollama_model" type="text" placeholder="qwen3:4b-instruct" />
+      </div>
+      <div class="field">
+        <label>Kaida / Hermes URL</label>
+        <input id="hermes_url" type="text" placeholder="http://127.0.0.1:8642/v1/chat/completions" />
+      </div>
+      <div class="field">
+        <label>Modelo Hermes</label>
+        <input id="hermes_model" type="text" placeholder="hermes-agent" />
+      </div>
+      <div class="field">
+        <label>Hermes API Key</label>
+        <div class="row">
+          <input id="hermes_key" type="password" placeholder="Chave local do Hermes" />
+          <button id="toggle-key" class="btn btn-ghost" type="button">👁️</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Discord Webhook URL</label>
+        <input id="discord_webhook_url" type="password" placeholder="https://discord.com/api/webhooks/..." />
+      </div>
+    </section>
+
+    <section id="tab-voz" class="panel">
+      <div class="field">
+        <label>Modelo Whisper (Microfone STT em CPU)</label>
+        <select id="whisper_model">
+          <option value="tiny">tiny — ultra rápido (~100 MB)</option>
+          <option value="base">base — equilibrado (recomendado)</option>
+          <option value="small">small — mais preciso em PT-BR (~460 MB)</option>
+          <option value="medium">medium — máxima precisão (mais pesado)</option>
+        </select>
+        <small>Ao salvar, o worker do microfone é reiniciado na próxima escuta para aplicar o novo modelo.</small>
+      </div>
+      <input id="tts_voice" type="hidden" value="pt-BR-FranciscaNeural" />
+      <input id="tts_rate" type="hidden" value="+0%" />
+      <input id="use_chatterbox" type="hidden" value="0" />
+    </section>
+
+    <section id="tab-memoria" class="panel">
+      <div class="row">
+        <input id="new-mem-input" type="text" placeholder="Ex: Minha banda favorita é Linkin Park" />
+        <button id="add-mem-btn" class="btn" type="button">Adicionar</button>
+      </div>
+      <div id="mem-list" class="mem-list"></div>
+    </section>
+
+    <section id="tab-docs" class="panel">
+      <div class="field">
+        <label>Base de Conhecimento Local (pasta docs/)</label>
+        <small>Coloque arquivos .txt, .md, .json ou .csv na pasta docs/. A Aster consulta os trechos relevantes automaticamente quando você perguntar sobre eles.</small>
+      </div>
+      <div class="row">
+        <button id="open-docs-btn" class="btn" type="button">Abrir pasta docs/</button>
+        <button id="refresh-docs-btn" class="btn btn-ghost" type="button">Atualizar lista</button>
+      </div>
+      <div id="docs-list" class="mem-list"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="status-msg">Alterações salvas direto no .env</span>
+    <button id="save-btn" class="btn" type="button">Salvar Configurações</button>
+  </footer>
+
+  <script>
+    const invoke = window.__TAURI__?.core?.invoke;
+    const statusMsg = document.getElementById('status-msg');
+    const saveBtn = document.getElementById('save-btn');
+    const memList = document.getElementById('mem-list');
+    const newMemInput = document.getElementById('new-mem-input');
+
+    const FIELDS = [
+      'ollama_url', 'ollama_model', 'hermes_url', 'hermes_model',
+      'hermes_key', 'discord_webhook_url', 'whisper_model',
+      'tts_voice', 'tts_rate', 'use_chatterbox'
+    ];
+
+    function setStatus(msg, isErr = false) {
+      statusMsg.textContent = msg;
+      statusMsg.style.color = isErr ? '#fca5a5' : '#a78bfa';
+    }
+
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+        saveBtn.style.display = (btn.dataset.tab === 'memoria' || btn.dataset.tab === 'docs') ? 'none' : 'inline-block';
+        if (btn.dataset.tab === 'docs') loadDocs();
+      });
+    });
+
+    document.getElementById('toggle-key').addEventListener('click', () => {
+      const el = document.getElementById('hermes_key');
+      el.type = el.type === 'password' ? 'text' : 'password';
+    });
+
+    async function loadSettings() {
+      try {
+        const cfg = await invoke('get_settings');
+        FIELDS.forEach((k) => {
+          const el = document.getElementById(k);
+          if (el && cfg[k] !== undefined) el.value = cfg[k];
+        });
+      } catch (e) {
+        setStatus(`Erro ao carregar: ${e}`, true);
+      }
+    }
+
+    saveBtn.addEventListener('click', async () => {
+      const cfg = {};
+      FIELDS.forEach((k) => {
+        cfg[k] = document.getElementById(k).value.trim();
+      });
+      try {
+        await invoke('save_settings', { cfg });
+        await invoke('stop_voice').catch(() => {});
+        setStatus('✓ Configurações salvas no .env!');
+      } catch (e) {
+        setStatus(`Erro ao salvar: ${e}`, true);
+      }
+    });
+
+    async function loadMemories() {
+      try {
+        const facts = (await invoke('memory_list')) || [];
+        memList.innerHTML = '';
+        if (!facts.length) {
+          memList.innerHTML = '<div class="mem-empty">Nenhuma memória salva ainda. Adicione acima ou diga "Aster, lembra que..."</div>';
+          return;
+        }
+        facts.forEach((fact, idx) => {
+          const row = document.createElement('div');
+          row.className = 'mem-item';
+          const span = document.createElement('span');
+          span.textContent = `${idx + 1}. ${fact}`;
+          const del = document.createElement('button');
+          del.className = 'btn btn-danger';
+          del.textContent = 'Apagar';
+          del.addEventListener('click', async () => {
+            await invoke('memory_remove', { query: String(idx + 1) });
+            await invoke('notify_memories_updated').catch(() => {});
+            loadMemories();
+            setStatus('Memória removida.');
+          });
+          row.append(span, del);
+          memList.appendChild(row);
+        });
+      } catch (e) {
+        setStatus(`Erro nas memórias: ${e}`, true);
+      }
+    }
+
+    async function addMemory() {
+      const fact = newMemInput.value.trim();
+      if (!fact) return;
+      newMemInput.value = '';
+      await invoke('memory_add', { fact });
+      await invoke('notify_memories_updated').catch(() => {});
+      loadMemories();
+      setStatus('✓ Memória adicionada!');
+    }
+
+    document.getElementById('add-mem-btn').addEventListener('click', addMemory);
+    newMemInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addMemory(); });
+
+    const docsList = document.getElementById('docs-list');
+    async function loadDocs() {
+      try {
+        const docs = (await invoke('docs_list')) || [];
+        docsList.innerHTML = '';
+        if (!docs.length) {
+          docsList.innerHTML = '<div class="mem-empty">Pasta docs/ vazia. Clique em "Abrir pasta docs/" e solte arquivos .txt ou .md lá dentro.</div>';
+          return;
+        }
+        docs.forEach((d) => {
+          const row = document.createElement('div');
+          row.className = 'mem-item';
+          row.innerHTML = `<span>📄 ${d.name}</span><small style="color:#a1a1aa">${d.size_kb} KB</small>`;
+          docsList.appendChild(row);
+        });
+      } catch (e) {
+        setStatus(`Erro lendo docs/: ${e}`, true);
+      }
+    }
+
+    document.getElementById('open-docs-btn').addEventListener('click', async () => {
+      try {
+        await invoke('docs_open_folder');
+      } catch (e) {
+        setStatus(`Erro abrindo docs/: ${e}`, true);
+      }
+    });
+    document.getElementById('refresh-docs-btn').addEventListener('click', loadDocs);
+
+    loadSettings();
+    loadMemories();
+    loadDocs();
+  </script>
+</body>
+</html>
