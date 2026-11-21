@@ -1,10 +1,4 @@
-
-
-
-
-https://github.com/user-attachments/assets/54915b5e-a8fd-4ffe-995d-1aa896bafff4
-
-
+<img width="872" height="720" alt="aster_actions" src="https://github.com/user-attachments/assets/b61fc976-78a8-49bf-b3e6-d58c374c733a" />
 
 # ✦ Aster Companion
 
@@ -12,7 +6,6 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 
 > Inspirado no projeto open-source [capri-desktop](https://github.com/lachydotmcg/capri-desktop).
 
-https://github.com/user-attachments/assets/3f6774a4-19d1-4caa-94d6-4fd9755618e9
 ---
 
 ##  Principais Recursos
