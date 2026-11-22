@@ -2,12 +2,14 @@ use crate::config::{find_project_root, AppConfig};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use serde::Serialize;
+use serde_json::json;
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tauri::State;
 
 #[cfg(windows)]
@@ -122,12 +124,20 @@ impl Drop for PyWorker {
 
 pub struct VoiceManager {
     whisper: Mutex<Option<PyWorker>>,
+    http: reqwest::Client,
 }
 
 impl VoiceManager {
     pub fn new() -> Self {
+        let http = reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(5))
+            .timeout(Duration::from_secs(20))
+            .pool_idle_timeout(Duration::from_secs(90))
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new());
         Self {
             whisper: Mutex::new(None),
+            http,
         }
     }
 
@@ -226,6 +236,76 @@ pub async fn transcribe_audio(
     })
     .await
     .map_err(|e| format!("Erro na thread STT: {e}"))?
+}
+
+#[derive(Serialize)]
+pub struct AudioPayload {
+    pub mime: String,
+    pub audio_base64: String,
+}
+
+#[tauri::command]
+pub async fn synthesize_fish_speech(
+    manager: State<'_, Arc<VoiceManager>>,
+    text: String,
+) -> Result<Option<AudioPayload>, String> {
+    let cfg = AppConfig::load();
+    if cfg.tts_enabled != "1" || cfg.fish_api_key.is_empty() {
+        return Ok(None);
+    }
+
+    let clean: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if clean.is_empty() {
+        return Ok(None);
+    }
+
+    let mut body = json!({
+        "text": clean,
+        "format": "mp3",
+        "mp3_bitrate": 64,
+        "latency": "low"
+    });
+    if !cfg.fish_voice_id.is_empty() {
+        body["reference_id"] = json!(cfg.fish_voice_id);
+    }
+
+    let model_header = if cfg.fish_model.is_empty() {
+        "s1"
+    } else {
+        cfg.fish_model.as_str()
+    };
+
+    let res = manager
+        .http
+        .post("https://api.fish.audio/v1/tts")
+        .header("Authorization", format!("Bearer {}", cfg.fish_api_key))
+        .header("model", model_header)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("Fish Audio inacessível: {e}"))?;
+
+    let status = res.status();
+    if !status.is_success() {
+        let err_txt = res.text().await.unwrap_or_default();
+        return Err(format!(
+            "Fish Audio HTTP {status}: {}",
+            err_txt.chars().take(120).collect::<String>()
+        ));
+    }
+
+    let bytes = res
+        .bytes()
+        .await
+        .map_err(|e| format!("Erro lendo áudio do Fish Audio: {e}"))?;
+    if bytes.is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some(AudioPayload {
+        mime: "audio/mpeg".to_string(),
+        audio_base64: BASE64.encode(&bytes),
+    }))
 }
 
 #[tauri::command]

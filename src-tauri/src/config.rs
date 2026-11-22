@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use tauri::{Emitter, Manager};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
@@ -12,9 +13,28 @@ pub struct AppConfig {
     pub hermes_key: String,
     pub discord_webhook_url: String,
     pub whisper_model: String,
-    pub tts_voice: String,
-    pub tts_rate: String,
-    pub use_chatterbox: String,
+    pub fish_api_key: String,
+    pub fish_voice_id: String,
+    pub fish_model: String,
+    pub tts_enabled: String,
+    #[serde(default = "default_tts_volume")]
+    pub tts_volume: String,
+    #[serde(default = "default_skin")]
+    pub active_skin: String,
+    #[serde(default = "default_ui_theme")]
+    pub ui_theme: String,
+}
+
+fn default_tts_volume() -> String {
+    "70".to_string()
+}
+
+fn default_skin() -> String {
+    "padrao".to_string()
+}
+
+fn default_ui_theme() -> String {
+    "gothic".to_string()
 }
 
 pub fn find_project_root() -> Option<PathBuf> {
@@ -138,19 +158,13 @@ impl AppConfig {
             hermes_key: get_var(&vars, "HERMES_KEY", ""),
             discord_webhook_url: get_var(&vars, "DISCORD_WEBHOOK_URL", ""),
             whisper_model: get_var(&vars, "WHISPER_MODEL", "base"),
-            tts_voice: {
-                let v = get_var(&vars, "TTS_VOICE", "pt-BR-ThalitaMultilingualNeural");
-                if matches!(
-                    v.as_str(),
-                    "pt-BR-GiovannaNeural" | "pt-BR-BrendaNeural" | "pt-BR-ThalitaNeural"
-                ) {
-                    "pt-BR-ThalitaMultilingualNeural".to_string()
-                } else {
-                    v
-                }
-            },
-            tts_rate: get_var(&vars, "TTS_RATE", "+8%"),
-            use_chatterbox: get_var(&vars, "USE_CHATTERBOX", "0"),
+            fish_api_key: get_var(&vars, "FISH_API_KEY", ""),
+            fish_voice_id: get_var(&vars, "FISH_VOICE_ID", ""),
+            fish_model: get_var(&vars, "FISH_MODEL", "s1"),
+            tts_enabled: get_var(&vars, "TTS_ENABLED", "1"),
+            tts_volume: get_var(&vars, "TTS_VOLUME", "70"),
+            active_skin: get_var(&vars, "ACTIVE_SKIN", "padrao"),
+            ui_theme: get_var(&vars, "UI_THEME", "gothic"),
         }
     }
 }
@@ -161,8 +175,16 @@ pub fn get_settings() -> AppConfig {
 }
 
 #[tauri::command]
-pub fn save_settings(cfg: AppConfig) -> Result<(), String> {
+pub fn save_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
     let path = target_env_path()?;
+    let vol_clean = clean_env_val(&cfg.tts_volume)
+        .parse::<u32>()
+        .unwrap_or(70)
+        .min(100);
+    let theme_clean = {
+        let t = clean_env_val(&cfg.ui_theme);
+        if t.is_empty() { "gothic".to_string() } else { t }
+    };
     let content = format!(
         "# Configuração local da Aster Companion (NÃO subir para o Git!)\n\
          OLLAMA_URL={}\n\
@@ -174,11 +196,17 @@ pub fn save_settings(cfg: AppConfig) -> Result<(), String> {
          \n\
          DISCORD_WEBHOOK_URL={}\n\
          \n\
-         # Voz\n\
+         # Voz (STT Whisper + TTS Fish Audio)\n\
          WHISPER_MODEL={}\n\
-         TTS_VOICE={}\n\
-         TTS_RATE={}\n\
-         USE_CHATTERBOX={}\n",
+         TTS_ENABLED={}\n\
+         TTS_VOLUME={}\n\
+         FISH_API_KEY={}\n\
+         FISH_VOICE_ID={}\n\
+         FISH_MODEL={}\n\
+         \n\
+         # Skin ativa e tema de cores da interface\n\
+         ACTIVE_SKIN={}\n\
+         UI_THEME={}\n",
         clean_env_val(&cfg.ollama_url),
         clean_env_val(&cfg.ollama_model),
         clean_env_val(&cfg.hermes_url),
@@ -186,9 +214,20 @@ pub fn save_settings(cfg: AppConfig) -> Result<(), String> {
         clean_env_val(&cfg.hermes_key),
         clean_env_val(&cfg.discord_webhook_url),
         clean_env_val(&cfg.whisper_model),
-        clean_env_val(&cfg.tts_voice),
-        clean_env_val(&cfg.tts_rate),
-        clean_env_val(&cfg.use_chatterbox),
+        clean_env_val(&cfg.tts_enabled),
+        vol_clean,
+        clean_env_val(&cfg.fish_api_key),
+        clean_env_val(&cfg.fish_voice_id),
+        clean_env_val(&cfg.fish_model),
+        clean_env_val(&cfg.active_skin),
+        theme_clean,
     );
-    fs::write(&path, content).map_err(|e| format!("Erro salvando .env: {e}"))
+    fs::write(&path, content).map_err(|e| format!("Erro salvando .env: {e}"))?;
+    if let Some(main_win) = app.get_webview_window("main") {
+        let _ = main_win.emit(
+            "aster-settings-updated",
+            serde_json::json!({ "tts_volume": vol_clean, "ui_theme": theme_clean }),
+        );
+    }
+    Ok(())
 }

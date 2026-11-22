@@ -3,261 +3,678 @@
 <head>
   <meta charset="UTF-8">
   <title>Aster • Configurações</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    :root {
+      --accent: #8b5cf6;
+      --accent-bright: #a78bfa;
+      --accent-soft: #c4b5fd;
+      --accent-text: #ede9fe;
+      --accent-deep: #5b21b6;
+      --accent-mid: #7c3aed;
+      --accent-rgb: 139, 92, 246;
+      --accent-soft-rgb: 167, 139, 250;
+      --bg-glow: #1d1236;
+      --bg-mid: #0b0914;
+      --bg-deep: #07060d;
+      --surface: rgba(22, 17, 36, 0.76);
+      --sidebar: rgba(15, 11, 26, 0.88);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    code, .mono {
+      font-family: 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+    }
+    .ico {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.85;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .ico-sm { width: 13px; height: 13px; }
+    .tab-btn .ico { color: #71717a; transition: color 0.2s ease; }
+    .tab-btn:hover .ico { color: var(--accent-soft); }
+    .tab-btn.active .ico { color: var(--accent-bright); }
+    .file-pill {
+      font-family: 'Cascadia Code', Consolas, monospace;
+      font-size: 10.5px;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: rgba(var(--accent-rgb), 0.12);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.2);
+      color: var(--accent-soft);
+    }
+    .file-pill.ok {
+      background: rgba(52, 211, 153, 0.1);
+      border-color: rgba(52, 211, 153, 0.24);
+      color: #86efac;
+    }
     body {
-      background: #0d0b14;
+      background: radial-gradient(circle at 18% 12%, var(--bg-glow) 0%, var(--bg-mid) 55%, var(--bg-deep) 100%);
       color: #f4f4f5;
       height: 100vh;
       display: flex;
-      flex-direction: column;
       overflow: hidden;
+      transition: background 0.3s ease;
     }
 
-    header {
-      padding: 16px 20px 12px;
-      border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+    /* Sidebar Glass Gothic */
+    aside {
+      width: 205px;
+      background: var(--sidebar);
+      border-right: 1px solid rgba(var(--accent-soft-rgb), 0.18);
+      display: flex;
+      flex-direction: column;
+      padding: 18px 12px 14px;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .brand {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      background: linear-gradient(180deg, rgba(109, 40, 217, 0.16), transparent);
+      gap: 11px;
+      padding: 4px 6px 12px;
+      border-bottom: 1px solid rgba(var(--accent-soft-rgb), 0.15);
     }
-    header h1 {
-      font-size: 15px;
+    .avatar-ring {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.55);
+      background: var(--bg-glow);
+      flex-shrink: 0;
+    }
+    .avatar-ring img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+    .brand-info h1 {
+      font-size: 14px;
       font-weight: 700;
-      letter-spacing: 0.04em;
-      color: #ddd6fe;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-text);
     }
-    header span {
-      font-size: 11px;
+    .brand-info span {
+      font-size: 10.5px;
       color: #a1a1aa;
     }
 
-    .tabs {
+    nav {
       display: flex;
-      gap: 6px;
-      padding: 10px 20px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
     }
     .tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
       background: transparent;
-      border: none;
+      border: 1px solid transparent;
+      border-radius: 10px;
       color: #a1a1aa;
       font-size: 12.5px;
       font-weight: 600;
-      padding: 8px 14px;
-      border-bottom: 2px solid transparent;
+      padding: 9px 11px;
       cursor: pointer;
-      transition: all 0.2s;
+      text-align: left;
+      transition: all 0.2s ease;
     }
-    .tab-btn:hover { color: #e4e4e7; }
+    .tab-btn:hover {
+      background: rgba(var(--accent-rgb), 0.11);
+      color: #e4e4e7;
+    }
     .tab-btn.active {
-      color: #c4b5fd;
-      border-bottom-color: #8b5cf6;
+      background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.24), rgba(var(--accent-rgb), 0.08));
+      border-color: rgba(var(--accent-soft-rgb), 0.35);
+      color: var(--accent-text);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    }
+    .badge {
+      margin-left: auto;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(var(--accent-rgb), 0.24);
+      color: var(--accent-text);
+    }
+
+    /* Card de status ao vivo */
+    .health-card {
+      background: var(--surface);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.16);
+      border-radius: 10px;
+      padding: 10px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .health-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #71717a;
+      margin-bottom: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .health-refresh {
+      background: none;
+      border: none;
+      color: var(--accent-bright);
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .health-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: #d4d4d8;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #52525b;
+      box-shadow: 0 0 6px rgba(82, 82, 91, 0.6);
+    }
+    .status-dot.ok { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.75); }
+    .status-dot.off { background: #f87171; box-shadow: 0 0 8px rgba(248, 113, 113, 0.6); }
+
+    /* Área principal */
+    .content-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
     }
 
     main {
       flex: 1;
       overflow-y: auto;
-      padding: 16px 20px;
+      padding: 20px 22px;
     }
     main::-webkit-scrollbar { width: 5px; }
-    main::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.35); border-radius: 4px; }
+    main::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb), 0.35); border-radius: 4px; }
 
-    .panel { display: none; flex-direction: column; gap: 12px; }
+    .panel { display: none; flex-direction: column; gap: 13px; }
     .panel.active { display: flex; }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent-text);
+      margin-bottom: 2px;
+    }
+    .panel-sub {
+      font-size: 11.5px;
+      color: #a1a1aa;
+      margin-bottom: 4px;
+    }
+
+    .glass-card {
+      background: var(--surface);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.2);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+    }
 
     .field { display: flex; flex-direction: column; gap: 5px; }
     .field label {
       font-size: 11.5px;
       font-weight: 600;
-      color: #c4b5fd;
+      color: var(--accent-soft);
     }
-    .field small {
-      font-size: 10.5px;
-      color: #71717a;
-    }
+    .field small { font-size: 10.5px; color: #71717a; }
+
     input[type="text"], input[type="password"], select {
-      background: #171324;
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      background: rgba(11, 9, 20, 0.72);
+      border: 1px solid rgba(var(--accent-rgb), 0.28);
       border-radius: 8px;
       color: #f4f4f5;
       font-size: 12.5px;
       padding: 8px 10px;
       outline: none;
       width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    input:focus, select:focus { border-color: #a78bfa; }
+    input:focus, select:focus {
+      border-color: var(--accent-bright);
+      box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.22);
+    }
+
+    /* Toggle Switch moderno */
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .switch-row strong { font-size: 12.5px; color: #f4f4f5; display: block; }
+    .switch-row small { font-size: 11px; color: #a1a1aa; }
+    .switch {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #27272a;
+      border: 1px solid rgba(167, 139, 250, 0.25);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: 0.25s;
+    }
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      top: 3px;
+      background: #e4e4e7;
+      border-radius: 50%;
+      transition: 0.25s;
+    }
+    .switch input:checked + .slider {
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      border-color: var(--accent-soft);
+      box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.55);
+    }
+    .switch input:checked + .slider::before {
+      transform: translateX(18px);
+      background: #ffffff;
+    }
 
     .row { display: flex; gap: 8px; align-items: center; }
     .btn {
-      background: linear-gradient(135deg, #6d28d9, #4c1d95);
-      color: #f5f3ff;
-      border: 1px solid rgba(196, 181, 253, 0.3);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: linear-gradient(135deg, var(--accent-mid), var(--accent-deep));
+      color: var(--accent-text);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.35);
       border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 12.5px;
+      padding: 8px 13px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
+      transition: all 0.2s;
     }
-    .btn:hover { filter: brightness(1.15); }
+    .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
     .btn-ghost {
-      background: rgba(139, 92, 246, 0.14);
-      color: #c4b5fd;
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      background: rgba(var(--accent-rgb), 0.14);
+      color: var(--accent-soft);
+      border: 1px solid rgba(var(--accent-rgb), 0.3);
     }
     .btn-danger {
-      background: rgba(239, 68, 68, 0.15);
+      background: rgba(239, 68, 68, 0.14);
       color: #fca5a5;
-      border: 1px solid rgba(239, 68, 68, 0.35);
-      padding: 5px 9px;
-      font-size: 11.5px;
+      border: 1px solid rgba(239, 68, 68, 0.32);
+      padding: 4px 9px;
+      font-size: 11px;
     }
 
-    .mem-list {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      margin-top: 4px;
-    }
+    .mem-list { display: flex; flex-direction: column; gap: 7px; }
     .mem-item {
-      background: #171324;
-      border: 1px solid rgba(139, 92, 246, 0.22);
-      border-radius: 8px;
-      padding: 8px 10px;
+      background: var(--surface);
+      border: 1px solid rgba(var(--accent-rgb), 0.2);
+      border-radius: 9px;
+      padding: 8px 11px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      font-size: 12.5px;
-      line-height: 1.35;
+      font-size: 12px;
     }
     .mem-empty {
       color: #71717a;
       font-size: 12px;
       text-align: center;
-      padding: 24px 10px;
-      border: 1px dashed rgba(139, 92, 246, 0.25);
-      border-radius: 8px;
+      padding: 26px 12px;
+      border: 1px dashed rgba(var(--accent-rgb), 0.28);
+      border-radius: 10px;
+    }
+
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .theme-card {
+      background: var(--surface);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.18);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .theme-card:hover {
+      border-color: rgba(var(--accent-soft-rgb), 0.55);
+      transform: translateY(-1px);
+    }
+    .theme-card.active {
+      border-color: var(--accent-bright);
+      box-shadow: 0 0 0 1px var(--accent-bright), 0 6px 20px rgba(var(--accent-rgb), 0.25);
+    }
+    .swatches {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     footer {
-      padding: 12px 20px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px 22px;
+      border-top: 1px solid rgba(var(--accent-soft-rgb), 0.14);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #110e1b;
+      background: var(--sidebar);
     }
-    #status-msg {
-      font-size: 12px;
-      color: #a78bfa;
-    }
+    #status-msg { font-size: 12px; color: var(--accent-soft); }
   </style>
 </head>
 <body>
-  <header>
-    <h1>✦ Aster Companion</h1>
-    <span>Configurações &amp; Memória</span>
-  </header>
+  <aside>
+    <div class="brand">
+      <div class="avatar-ring">
+        <img src="sprites/aster_avatar.png" alt="Aster" />
+      </div>
+      <div class="brand-info">
+        <h1>Aster</h1>
+        <span>Companion v1.1.0</span>
+      </div>
+    </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="ia">IA &amp; Conexões</button>
-    <button class="tab-btn" data-tab="voz">Voz</button>
-    <button class="tab-btn" data-tab="memoria">Memórias</button>
-    <button class="tab-btn" data-tab="docs">Docs (RAG)</button>
+    <nav>
+      <button class="tab-btn active" data-tab="ia">
+        <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+        <span>IA &amp; Conexões</span>
+      </button>
+      <button class="tab-btn" data-tab="voz">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+        <span>Voz &amp; Fish Audio</span>
+      </button>
+      <button class="tab-btn" data-tab="memoria">
+        <svg class="ico" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+        <span>Memórias</span>
+        <span id="mem-count" class="badge">0</span>
+      </button>
+      <button class="tab-btn" data-tab="docs">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8M16 13H8M16 17H8"/></svg>
+        <span>Docs (RAG)</span>
+        <span id="doc-count" class="badge">0</span>
+      </button>
+      <button class="tab-btn" data-tab="skins">
+        <svg class="ico" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        <span>Skins</span>
+        <span id="skin-count" class="badge">1</span>
+      </button>
+      <button class="tab-btn" data-tab="temas">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+        <span>Temas</span>
+      </button>
+    </nav>
+
+    <div class="health-card">
+      <div class="health-title">
+        <span>Status ao vivo</span>
+        <button id="refresh-health" class="health-refresh" title="Atualizar status">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        </button>
+      </div>
+      <div class="health-row"><span>Ollama</span><span id="dot-ollama" class="status-dot"></span></div>
+      <div class="health-row"><span>Kaida / Hermes</span><span id="dot-hermes" class="status-dot"></span></div>
+      <div class="health-row"><span>Fish Audio</span><span id="dot-fish" class="status-dot"></span></div>
+    </div>
+  </aside>
+
+  <div class="content-wrap">
+    <main>
+      <section id="tab-ia" class="panel active">
+        <div>
+          <div class="panel-title">IA &amp; Conexões</div>
+          <div class="panel-sub">Cérebro híbrido: Ollama local + escalonamento para Kaida/Hermes.</div>
+        </div>
+        <div class="glass-card">
+          <div class="field">
+            <label>Ollama URL</label>
+            <input id="ollama_url" type="text" placeholder="http://127.0.0.1:11434/api/chat" />
+          </div>
+          <div class="field">
+            <label>Modelo Local (Ollama)</label>
+            <input id="ollama_model" type="text" placeholder="qwen3:4b-instruct" />
+          </div>
+        </div>
+        <div class="glass-card">
+          <div class="field">
+            <label>Kaida / Hermes URL</label>
+            <input id="hermes_url" type="text" placeholder="http://127.0.0.1:8642/v1/chat/completions" />
+          </div>
+          <div class="field">
+            <label>Modelo Hermes</label>
+            <input id="hermes_model" type="text" placeholder="hermes-agent" />
+          </div>
+          <div class="field">
+            <label>Hermes API Key</label>
+            <div class="row">
+              <input id="hermes_key" type="password" placeholder="Chave local do Hermes" />
+              <button id="toggle-key" class="btn btn-ghost" type="button" title="Mostrar/ocultar chave">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Discord Webhook URL</label>
+            <input id="discord_webhook_url" type="password" placeholder="https://discord.com/api/webhooks/..." />
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-voz" class="panel">
+        <div>
+          <div class="panel-title">Voz &amp; Fish Audio</div>
+          <div class="panel-sub">Voz personalizada via Fish Audio (baixa latência) + microfone Whisper local.</div>
+        </div>
+        <div class="glass-card">
+          <div class="switch-row">
+            <div>
+              <strong>Voz Falada (Fish Audio)</strong>
+              <small>Usa sua voz clonada nas respostas e comentários</small>
+            </div>
+            <label class="switch">
+              <input id="tts_enabled_cb" type="checkbox" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="field">
+            <label>Fish Audio API Key</label>
+            <div class="row">
+              <input id="fish_api_key" type="password" placeholder="Cole sua API Key do fish.audio" />
+              <button id="toggle-fish-key" class="btn btn-ghost" type="button" title="Mostrar/ocultar chave">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Fish Audio Voice ID (reference_id)</label>
+            <input id="fish_voice_id" type="text" placeholder="Ex: 7f92f8afb8ec43bf81429cc1c9199cb1" />
+          </div>
+          <div class="field">
+            <div class="row" style="justify-content:space-between">
+              <label for="tts_volume">Volume da Voz da Aster</label>
+              <span id="tts_volume_label" style="font-size:12px;font-weight:700;color:var(--accent-text)">70%</span>
+            </div>
+            <input id="tts_volume" type="range" min="0" max="100" step="5" value="70" style="width:100%;accent-color:var(--accent);cursor:pointer" />
+          </div>
+          <div class="row">
+            <div class="field" style="flex:1">
+              <label>Modelo Fish Audio</label>
+              <select id="fish_model">
+                <option value="s1">s1 — expressivo (recomendado)</option>
+                <option value="speech-1.6">speech-1.6</option>
+                <option value="speech-1.5">speech-1.5</option>
+              </select>
+            </div>
+            <button id="test-voice-btn" class="btn btn-ghost" type="button" style="margin-top:18px">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+              <span>Testar Voz</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="field">
+            <label>Modelo Whisper (Microfone STT em CPU)</label>
+            <select id="whisper_model">
+              <option value="tiny">tiny — ultra rápido (~100 MB)</option>
+              <option value="base">base — equilibrado (recomendado)</option>
+              <option value="small">small — mais preciso em PT-BR (~460 MB)</option>
+              <option value="medium">medium — máxima precisão (mais pesado)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-memoria" class="panel">
+        <div>
+          <div class="panel-title">Memória Persistente</div>
+          <div class="panel-sub">Fatos que a Aster lembra entre sessões (salvos em memory.json).</div>
+        </div>
+        <div class="row">
+          <input id="new-mem-input" type="text" placeholder="Ex: Minha banda favorita é Linkin Park" />
+          <button id="add-mem-btn" class="btn" type="button">Adicionar</button>
+        </div>
+        <div id="mem-list" class="mem-list"></div>
+      </section>
+
+      <section id="tab-docs" class="panel">
+        <div>
+          <div class="panel-title">Documentos Locais (RAG)</div>
+          <div class="panel-sub">Arquivos .txt, .md, .json ou .csv na pasta docs/ consultados automaticamente.</div>
+        </div>
+        <div class="row">
+          <button id="open-docs-btn" class="btn" type="button">
+            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+            <span>Abrir pasta docs/</span>
+          </button>
+          <button id="refresh-docs-btn" class="btn btn-ghost" type="button">
+            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            <span>Atualizar</span>
+          </button>
+        </div>
+        <div id="docs-list" class="mem-list"></div>
+      </section>
+
+      <section id="tab-skins" class="panel">
+        <div>
+          <div class="panel-title">Skins &amp; Aparência</div>
+          <div class="panel-sub">Com apenas os 6 sprites essenciais sua skin já fica completa sem nunca voltar pro visual padrão.</div>
+        </div>
+        <div class="row">
+          <input id="new-skin-input" type="text" placeholder="Nome da nova skin (ex: kda_akali, cyber)" />
+          <button id="create-skin-btn" class="btn" type="button">
+            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg>
+            <span>Nova Skin</span>
+          </button>
+        </div>
+        <div class="row">
+          <button id="open-skins-btn" class="btn btn-ghost" type="button">
+            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+            <span>Abrir pasta skins/</span>
+          </button>
+          <button id="refresh-skins-btn" class="btn btn-ghost" type="button">
+            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            <span>Atualizar</span>
+          </button>
+        </div>
+        <div id="skins-list" class="mem-list"></div>
+      </section>
+
+      <section id="tab-temas" class="panel">
+        <div>
+          <div class="panel-title">Presets de Cores</div>
+          <div class="panel-sub">Muda ao vivo as cores das Configurações, do balão de fala e da pílula da Aster.</div>
+        </div>
+        <div id="themes-grid" class="theme-grid"></div>
+      </section>
+    </main>
+
+    <footer>
+      <span id="status-msg">Salvo direto no .env</span>
+      <button id="save-btn" class="btn" type="button">Salvar Configurações</button>
+    </footer>
   </div>
 
-  <main>
-    <section id="tab-ia" class="panel active">
-      <div class="field">
-        <label>Ollama URL</label>
-        <input id="ollama_url" type="text" placeholder="http://127.0.0.1:11434/api/chat" />
-      </div>
-      <div class="field">
-        <label>Modelo Local (Ollama)</label>
-        <input id="ollama_model" type="text" placeholder="qwen3:4b-instruct" />
-      </div>
-      <div class="field">
-        <label>Kaida / Hermes URL</label>
-        <input id="hermes_url" type="text" placeholder="http://127.0.0.1:8642/v1/chat/completions" />
-      </div>
-      <div class="field">
-        <label>Modelo Hermes</label>
-        <input id="hermes_model" type="text" placeholder="hermes-agent" />
-      </div>
-      <div class="field">
-        <label>Hermes API Key</label>
-        <div class="row">
-          <input id="hermes_key" type="password" placeholder="Chave local do Hermes" />
-          <button id="toggle-key" class="btn btn-ghost" type="button">👁️</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Discord Webhook URL</label>
-        <input id="discord_webhook_url" type="password" placeholder="https://discord.com/api/webhooks/..." />
-      </div>
-    </section>
-
-    <section id="tab-voz" class="panel">
-      <div class="field">
-        <label>Modelo Whisper (Microfone STT em CPU)</label>
-        <select id="whisper_model">
-          <option value="tiny">tiny — ultra rápido (~100 MB)</option>
-          <option value="base">base — equilibrado (recomendado)</option>
-          <option value="small">small — mais preciso em PT-BR (~460 MB)</option>
-          <option value="medium">medium — máxima precisão (mais pesado)</option>
-        </select>
-        <small>Ao salvar, o worker do microfone é reiniciado na próxima escuta para aplicar o novo modelo.</small>
-      </div>
-      <input id="tts_voice" type="hidden" value="pt-BR-FranciscaNeural" />
-      <input id="tts_rate" type="hidden" value="+0%" />
-      <input id="use_chatterbox" type="hidden" value="0" />
-    </section>
-
-    <section id="tab-memoria" class="panel">
-      <div class="row">
-        <input id="new-mem-input" type="text" placeholder="Ex: Minha banda favorita é Linkin Park" />
-        <button id="add-mem-btn" class="btn" type="button">Adicionar</button>
-      </div>
-      <div id="mem-list" class="mem-list"></div>
-    </section>
-
-    <section id="tab-docs" class="panel">
-      <div class="field">
-        <label>Base de Conhecimento Local (pasta docs/)</label>
-        <small>Coloque arquivos .txt, .md, .json ou .csv na pasta docs/. A Aster consulta os trechos relevantes automaticamente quando você perguntar sobre eles.</small>
-      </div>
-      <div class="row">
-        <button id="open-docs-btn" class="btn" type="button">Abrir pasta docs/</button>
-        <button id="refresh-docs-btn" class="btn btn-ghost" type="button">Atualizar lista</button>
-      </div>
-      <div id="docs-list" class="mem-list"></div>
-    </section>
-  </main>
-
-  <footer>
-    <span id="status-msg">Alterações salvas direto no .env</span>
-    <button id="save-btn" class="btn" type="button">Salvar Configurações</button>
-  </footer>
-
+  <script src="themes.js"></script>
   <script>
     const invoke = window.__TAURI__?.core?.invoke;
     const statusMsg = document.getElementById('status-msg');
     const saveBtn = document.getElementById('save-btn');
     const memList = document.getElementById('mem-list');
+    const docsList = document.getElementById('docs-list');
+    const skinsList = document.getElementById('skins-list');
+    const themesGrid = document.getElementById('themes-grid');
     const newMemInput = document.getElementById('new-mem-input');
+    const ttsCb = document.getElementById('tts_enabled_cb');
+    const ttsVolumeInput = document.getElementById('tts_volume');
+    const ttsVolumeLabel = document.getElementById('tts_volume_label');
+    let loadedActiveSkin = 'padrao';
+    let loadedUiTheme = 'gothic';
 
-    const FIELDS = [
+    ttsVolumeInput.addEventListener('input', () => {
+      ttsVolumeLabel.textContent = `${ttsVolumeInput.value}%`;
+    });
+
+    const TEXT_FIELDS = [
       'ollama_url', 'ollama_model', 'hermes_url', 'hermes_model',
       'hermes_key', 'discord_webhook_url', 'whisper_model',
-      'tts_voice', 'tts_rate', 'use_chatterbox'
+      'fish_api_key', 'fish_voice_id', 'fish_model'
     ];
 
     function setStatus(msg, isErr = false) {
       statusMsg.textContent = msg;
-      statusMsg.style.color = isErr ? '#fca5a5' : '#a78bfa';
+      statusMsg.style.color = isErr ? '#fca5a5' : '#c4b5fd';
     }
 
     document.querySelectorAll('.tab-btn').forEach((btn) => {
@@ -266,8 +683,10 @@
         document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-        saveBtn.style.display = (btn.dataset.tab === 'memoria' || btn.dataset.tab === 'docs') ? 'none' : 'inline-block';
+        saveBtn.style.display = (btn.dataset.tab === 'memoria' || btn.dataset.tab === 'docs' || btn.dataset.tab === 'skins' || btn.dataset.tab === 'temas') ? 'none' : 'inline-block';
         if (btn.dataset.tab === 'docs') loadDocs();
+        if (btn.dataset.tab === 'skins') loadSkins();
+        if (btn.dataset.tab === 'temas') renderThemes();
       });
     });
 
@@ -275,36 +694,134 @@
       const el = document.getElementById('hermes_key');
       el.type = el.type === 'password' ? 'text' : 'password';
     });
+    document.getElementById('toggle-fish-key').addEventListener('click', () => {
+      const el = document.getElementById('fish_api_key');
+      el.type = el.type === 'password' ? 'text' : 'password';
+    });
+
+    async function refreshHealth() {
+      try {
+        const h = await invoke('check_services_health');
+        const setDot = (id, ok) => {
+          const el = document.getElementById(id);
+          el.classList.remove('ok', 'off');
+          el.classList.add(ok ? 'ok' : 'off');
+        };
+        setDot('dot-ollama', h.ollama_ok);
+        setDot('dot-hermes', h.hermes_ok);
+        setDot('dot-fish', h.fish_configured);
+      } catch (_) {}
+    }
+    document.getElementById('refresh-health').addEventListener('click', refreshHealth);
+
+    function collectConfig() {
+      const cfg = {
+        tts_enabled: ttsCb.checked ? '1' : '0',
+        tts_volume: String(ttsVolumeInput.value || '70'),
+        active_skin: loadedActiveSkin || 'padrao',
+        ui_theme: loadedUiTheme || 'gothic',
+      };
+      TEXT_FIELDS.forEach((k) => {
+        cfg[k] = document.getElementById(k).value.trim();
+      });
+      return cfg;
+    }
 
     async function loadSettings() {
       try {
         const cfg = await invoke('get_settings');
-        FIELDS.forEach((k) => {
+        TEXT_FIELDS.forEach((k) => {
           const el = document.getElementById(k);
           if (el && cfg[k] !== undefined) el.value = cfg[k];
         });
+        ttsCb.checked = cfg.tts_enabled !== '0';
+        const vol = Number(cfg.tts_volume ?? 70);
+        const clampedVol = Number.isFinite(vol) ? Math.max(0, Math.min(100, vol)) : 70;
+        ttsVolumeInput.value = String(clampedVol);
+        ttsVolumeLabel.textContent = `${clampedVol}%`;
+        loadedActiveSkin = cfg.active_skin || 'padrao';
+        loadedUiTheme = cfg.ui_theme || 'gothic';
+        window.applyAsterTheme?.(loadedUiTheme);
+        renderThemes();
       } catch (e) {
         setStatus(`Erro ao carregar: ${e}`, true);
       }
     }
 
-    saveBtn.addEventListener('click', async () => {
-      const cfg = {};
-      FIELDS.forEach((k) => {
-        cfg[k] = document.getElementById(k).value.trim();
+    function renderThemes() {
+      if (!themesGrid || !window.ASTER_THEMES) return;
+      themesGrid.innerHTML = '';
+      Object.entries(window.ASTER_THEMES).forEach(([id, t]) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `theme-card ${loadedUiTheme === id ? 'active' : ''}`;
+        card.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div class="swatches">
+              <span class="swatch" style="background:${t.bgGlow}"></span>
+              <span class="swatch" style="background:${t.accent}"></span>
+              <span class="swatch" style="background:${t.accentSoft}"></span>
+            </div>
+            ${loadedUiTheme === id ? '<span class="badge" style="margin-left:0">Ativo</span>' : ''}
+          </div>
+          <div style="font-size:12.5px;font-weight:600;color:#f5f3ff">${t.name}</div>
+          <div style="font-size:11px;color:#a1a1aa;line-height:1.35">${t.desc}</div>
+        `;
+        card.addEventListener('click', async () => {
+          loadedUiTheme = id;
+          window.applyAsterTheme?.(id);
+          renderThemes();
+          const ok = await saveAll(true);
+          if (ok) setStatus(`Tema "${t.name}" aplicado.`);
+        });
+        themesGrid.appendChild(card);
       });
+    }
+
+    async function saveAll(silent = false) {
       try {
-        await invoke('save_settings', { cfg });
+        await invoke('save_settings', { cfg: collectConfig() });
         await invoke('stop_voice').catch(() => {});
-        setStatus('✓ Configurações salvas no .env!');
+        refreshHealth();
+        if (!silent) setStatus('✓ Configurações salvas!');
+        return true;
       } catch (e) {
         setStatus(`Erro ao salvar: ${e}`, true);
+        return false;
+      }
+    }
+    saveBtn.addEventListener('click', () => saveAll(false));
+
+    document.getElementById('test-voice-btn').addEventListener('click', async () => {
+      setStatus('⏳ Testando voz no Fish Audio...');
+      const ok = await saveAll(true);
+      if (!ok) return;
+      try {
+        const payload = await invoke('synthesize_fish_speech', {
+          text: 'E aí Kio, teste de voz da Aster no Fish Audio.'
+        });
+        if (!payload || !payload.audio_base64) {
+          setStatus('Ative a voz e informe a Fish Audio API Key primeiro.', true);
+          return;
+        }
+        const bin = atob(payload.audio_base64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([bytes], { type: payload.mime }));
+        const audio = new Audio(url);
+        audio.volume = Math.max(0, Math.min(1, Number(ttsVolumeInput.value || 70) / 100));
+        audio.onended = () => URL.revokeObjectURL(url);
+        await audio.play();
+        setStatus('✓ Áudio reproduzido com sucesso!');
+      } catch (e) {
+        setStatus(`Erro Fish Audio: ${e}`, true);
       }
     });
 
     async function loadMemories() {
       try {
         const facts = (await invoke('memory_list')) || [];
+        document.getElementById('mem-count').textContent = String(facts.length);
         memList.innerHTML = '';
         if (!facts.length) {
           memList.innerHTML = '<div class="mem-empty">Nenhuma memória salva ainda. Adicione acima ou diga "Aster, lembra que..."</div>';
@@ -341,42 +858,177 @@
       loadMemories();
       setStatus('✓ Memória adicionada!');
     }
-
     document.getElementById('add-mem-btn').addEventListener('click', addMemory);
     newMemInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addMemory(); });
 
-    const docsList = document.getElementById('docs-list');
     async function loadDocs() {
       try {
         const docs = (await invoke('docs_list')) || [];
+        document.getElementById('doc-count').textContent = String(docs.length);
         docsList.innerHTML = '';
         if (!docs.length) {
-          docsList.innerHTML = '<div class="mem-empty">Pasta docs/ vazia. Clique em "Abrir pasta docs/" e solte arquivos .txt ou .md lá dentro.</div>';
+          docsList.innerHTML = '<div class="mem-empty">Pasta docs/ vazia. Clique em "Abrir pasta docs/" e solte seus .txt ou .md lá dentro.</div>';
           return;
         }
         docs.forEach((d) => {
           const row = document.createElement('div');
           row.className = 'mem-item';
-          row.innerHTML = `<span>📄 ${d.name}</span><small style="color:#a1a1aa">${d.size_kb} KB</small>`;
+          row.innerHTML = `<span style="display:inline-flex;align-items:center;gap:7px"><svg class="ico ico-sm" style="color:#a78bfa" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>${d.name}</span><small class="mono" style="color:#a1a1aa">${d.size_kb} KB</small>`;
           docsList.appendChild(row);
         });
       } catch (e) {
         setStatus(`Erro lendo docs/: ${e}`, true);
       }
     }
-
-    document.getElementById('open-docs-btn').addEventListener('click', async () => {
-      try {
-        await invoke('docs_open_folder');
-      } catch (e) {
-        setStatus(`Erro abrindo docs/: ${e}`, true);
-      }
-    });
+    document.getElementById('open-docs-btn').addEventListener('click', () => invoke('docs_open_folder').catch(() => {}));
     document.getElementById('refresh-docs-btn').addEventListener('click', loadDocs);
+
+    const SKIN_ESSENTIALS = [
+      { key: 'idle',   file: 'aster_idle.png',   label: 'Parada (base)' },
+      { key: 'talk',   file: 'aster_talk.png',   label: 'Falando (ou talk_calm)', alt: 'talk_calm' },
+      { key: 'think',  file: 'aster_think.png',  label: 'Pensando (serve p/ escutando)' },
+      { key: 'sleepy', file: 'aster_sleepy.png', label: 'Com sono / inativa' },
+      { key: 'drag',   file: 'aster_drag.png',   label: 'Sendo segurada' },
+      { key: 'sit',    file: 'aster_sit.png',    label: 'Sentada na janela' },
+    ];
+    const SKIN_EXPRESSIONS = [
+      { key: 'smug',  file: 'aster_smug.png',  label: 'Convencida / zueira' },
+      { key: 'angry', file: 'aster_angry.png', label: 'Irritada / chacoalhada' },
+      { key: 'blink', file: 'aster_blink.png', label: 'Piscando' },
+    ];
+    const SKIN_EXTRAS = [
+      { key: 'talk_calm', file: 'aster_talk_calm.png', label: 'Fala calma (variação)' },
+      { key: 'listen',    file: 'aster_listen.png',    label: 'Escutando no microfone' },
+      { key: 'music',     file: 'aster_music.png',     label: 'Curtindo música (Spotify)' },
+    ];
+
+    const SVG_CHECK_OK = `<svg class="ico ico-sm" style="color:#34d399" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>`;
+    const SVG_CHECK_EMPTY = `<svg class="ico ico-sm" style="color:#52525b" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>`;
+    const SVG_SPARKLE = `<svg class="ico ico-sm" style="color:var(--accent-bright)" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`;
+    const SVG_LIST = `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>`;
+
+    function renderChecklistGroup(title, items, keySet) {
+      const rows = items.map((it) => {
+        const ok = keySet.has(it.key) || (it.alt && keySet.has(it.alt));
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:${ok ? '#e4e4e7' : '#a1a1aa'}">
+          <span style="display:inline-flex;align-items:center;gap:6px">${ok ? SVG_CHECK_OK : SVG_CHECK_EMPTY} ${it.label}</span>
+          <span class="file-pill ${ok ? 'ok' : ''}">${it.file}</span>
+        </div>`;
+      }).join('');
+      return `<div style="margin-top:8px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#a78bfa;margin-bottom:5px">${title}</div><div style="display:flex;flex-direction:column;gap:4px">${rows}</div></div>`;
+    }
+
+    async function loadSkins() {
+      try {
+        const skins = (await invoke('skins_list')) || [];
+        document.getElementById('skin-count').textContent = String(skins.length);
+        skinsList.innerHTML = '';
+        skins.forEach((s) => {
+          const keySet = new Set(s.present_keys || []);
+          const essCount = SKIN_ESSENTIALS.filter((it) => keySet.has(it.key) || (it.alt && keySet.has(it.alt))).length;
+          const walkCount = [1,2,3,4,5,6,7,8].filter((i) => keySet.has(`walk${i}`)).length;
+          const essDone = essCount === SKIN_ESSENTIALS.length;
+
+          const card = document.createElement('div');
+          card.className = 'glass-card';
+          card.style.padding = '11px 13px';
+          card.style.gap = '9px';
+
+          const top = document.createElement('div');
+          top.style.display = 'flex';
+          top.style.alignItems = 'center';
+          top.style.justifyContent = 'space-between';
+          top.style.gap = '8px';
+
+          const info = document.createElement('div');
+          const statusColor = essDone ? '#34d399' : '#fbbf24';
+          const statusText = s.id === 'padrao'
+            ? 'Visual original completo • 20 sprites'
+            : `<span style="color:${statusColor};font-weight:600">${essCount}/${SKIN_ESSENTIALS.length} essenciais</span> • ${s.sprite_count} sprites${walkCount ? ` • walk ${walkCount}/8` : ''}`;
+          info.innerHTML = `<div style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:#f5f3ff">${SVG_SPARKLE}<span>${s.name}</span></div><div style="margin-top:2px"><small style="color:#a1a1aa">${statusText}</small></div>`;
+
+          const actions = document.createElement('div');
+          actions.className = 'row';
+
+          let checklistEl = null;
+          if (s.id !== 'padrao') {
+            const checkBtn = document.createElement('button');
+            checkBtn.className = 'btn btn-ghost';
+            checkBtn.style.padding = '6px 10px';
+            checkBtn.style.fontSize = '11.5px';
+            checkBtn.innerHTML = `${SVG_LIST}<span>Checklist</span>`;
+            checklistEl = document.createElement('div');
+            checklistEl.style.display = 'none';
+            checklistEl.style.borderTop = '1px solid rgba(167,139,250,0.16)';
+            checklistEl.style.paddingTop = '6px';
+            checklistEl.innerHTML =
+              renderChecklistGroup('Essenciais (mínimo para ficar completa)', SKIN_ESSENTIALS, keySet) +
+              renderChecklistGroup('Expressões recomendadas', SKIN_EXPRESSIONS, keySet) +
+              renderChecklistGroup('Extras opcionais', SKIN_EXTRAS, keySet) +
+              `<div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:${walkCount === 8 ? '#e4e4e7' : '#a1a1aa'}">
+                <span style="display:inline-flex;align-items:center;gap:6px">${walkCount === 8 ? SVG_CHECK_OK : SVG_CHECK_EMPTY} Caminhada (walk ${walkCount}/8 frames)</span>
+                <span class="file-pill ${walkCount === 8 ? 'ok' : ''}">aster_walk_1..8.png</span>
+              </div>`;
+            checkBtn.addEventListener('click', () => {
+              checklistEl.style.display = checklistEl.style.display === 'none' ? 'block' : 'none';
+            });
+            actions.appendChild(checkBtn);
+          }
+
+          const btn = document.createElement('button');
+          if (s.active) {
+            btn.className = 'btn btn-ghost';
+            btn.textContent = 'Ativa';
+            btn.disabled = true;
+            btn.style.opacity = '0.8';
+          } else {
+            btn.className = 'btn';
+            btn.textContent = 'Usar Skin';
+            btn.addEventListener('click', async () => {
+              try {
+                await invoke('skins_set_active', { skinId: s.id });
+                loadedActiveSkin = s.id;
+                setStatus(`Skin "${s.name}" ativada.`);
+                loadSkins();
+              } catch (e) {
+                setStatus(`Erro ao trocar skin: ${e}`, true);
+              }
+            });
+          }
+          actions.appendChild(btn);
+          top.append(info, actions);
+          card.appendChild(top);
+          if (checklistEl) card.appendChild(checklistEl);
+          skinsList.appendChild(card);
+        });
+      } catch (e) {
+        setStatus(`Erro lendo skins/: ${e}`, true);
+      }
+    }
+
+    const newSkinInput = document.getElementById('new-skin-input');
+    async function createNewSkin() {
+      const name = newSkinInput.value.trim();
+      if (!name) return;
+      try {
+        const slug = await invoke('skins_create', { name });
+        newSkinInput.value = '';
+        setStatus(`Pasta skins/${slug}/ criada com guia. Abra o Checklist para acompanhar.`);
+        loadSkins();
+      } catch (e) {
+        setStatus(`Erro criando skin: ${e}`, true);
+      }
+    }
+    document.getElementById('create-skin-btn').addEventListener('click', createNewSkin);
+    newSkinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') createNewSkin(); });
+    document.getElementById('open-skins-btn').addEventListener('click', () => invoke('skins_open_folder').catch(() => {}));
+    document.getElementById('refresh-skins-btn').addEventListener('click', loadSkins);
 
     loadSettings();
     loadMemories();
     loadDocs();
+    loadSkins();
+    refreshHealth();
   </script>
 </body>
 </html>

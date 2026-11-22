@@ -11,26 +11,32 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 ### 🖥️ Experiência de Desktop Companion
 * **Overlay transparente sem bordas** (`alwaysOnTop`, sem sombra retangular do Windows) com **click-through inteligente** nas áreas transparentes ao redor da personagem.
 * **System Tray (bandeja do Windows)** com menu rápido (*Abrir Chat*, *Configurações & Memória*, *Passeio Automático*, *Iniciar com o Windows*, *Sempre no Topo*, *Mostrar/Esconder*).
-* **Modo Tela Limpa + Atalho Global `Alt + A`:** balão e chat recolhem automaticamente após alguns segundos, deixando apenas a Aster flutuando na tela.
+* **Modo Tela Limpa + Atalho Global `Alt + A`:** pílula de chat flutuante com placeholders dinâmicos e ícones SVG minimalistas que se recolhem automaticamente após alguns segundos.
 * **Animações e Física:**
   * Piscar natural aleatório, expressões dinâmicas (`idle`, `smug`, `angry`, `sleepy`, `think`, `listen`, `music`, `talk_calm`, `talk`).
   * **Caminhada em 8 frames** com passeio autônomo pela barra de tarefas (com espelhamento automático esquerda/direita).
-  * **Física de pêndulo ao arrastar:** segurada pela gola do suéter com balanço elástico real seguindo a velocidade do mouse (Win32 `GetCursorPos` + `GetAsyncKeyState`).
-  * **Sentar nas janelas abertas:** ao soltar perto da borda superior de uma janela — ou por vontade própria — ela encaixa sentada em cima da guia e desce automaticamente se a janela fechar/minimizar.
-  * **Headpat / Carinho:** passar o mouse na cabeça dela solta partículas roxas e reações curtas.
+  * **Física de pêndulo realista ao arrastar:** segurada pela gola com balanço elástico suave por inércia seguindo a velocidade do mouse (Win32 `GetCursorPos` + `GetAsyncKeyState`).
+  * **Sentar nas janelas abertas:** ao soltar perto da borda superior de uma janela — ou por vontade própria — ela encaixa sentada em cima da guia (permanecendo sentada enquanto fala) e desce automaticamente se a janela fechar/minimizar.
+  * **Headpat / Carinho:** passar o mouse na cabeça dela solta partículas na cor do tema ativo e reações curtas.
+
+### 🎨 Skins ao Vivo & Presets de Cores (v1.1.0)
+* **Sistema de Skins (`skins/`):** crie novas skins direto pela aba **Skins** (botão *Nova Skin*), acompanhe o **Checklist visual** de sprites (*6 essenciais*, *3 expressões* e *extras*) e troque ao vivo sem recompilar — pelo painel ou via chat/voz (`/skin natalina`, `/skin padrao`). Inclui fallback inteligente dentro da própria skin.
+* **Skin Natalina inclusa (`skins/natalina/`):** conjunto completo de 20 sprites (incluindo caminhada em 8 frames com saco de presentes).
+* **6 Presets de Cores ao vivo (aba Temas):** *Glass Gothic*, *Kinkou Emerald*, *Crimson Natal*, *Cyber Ice*, *Sakura Nocturne* e *Obsidian Mono* — alteram em tempo real o painel de configurações, o balão de conversa, a pílula de chat e os destaques da interface.
 
 ### 🧠 IA Híbrida, Memória e RAG Local
 * **Cérebro Local ([Ollama](https://ollama.com/)):** respostas rápidas no estilo da personagem (ex: `qwen3:4b-instruct`) com emissão de tags de humor e ação.
 * **Escalonamento Remoto (Kaida / Hermes):** delega tarefas pesadas de código ou pesquisa para uma API compatível com OpenAI (`/kaida ...` ou *"peça para a Kaida..."*).
-* **Memória Persistente (`memory.json`):** salva, lista e apaga fatos e preferências entre sessões (por chat, voz ou painel visual).
+* **Memória Persistente (`memory.json`):** salva, lista e apaga fatos, músicas favoritas e apelidos entre sessões (por chat, voz ou painel visual).
 * **Base de Documentos Locais (`docs/` — RAG):** busca instantânea em Rust nos arquivos `.txt`, `.md`, `.json`, `.csv` e `.log` colocados em `docs/`, injetando trechos relevantes no contexto automaticamente.
-* **Comentários espontâneos:** comentários curtos ocasionais baseados no horário e na janela ativa (com detecção de **tela cheia** para nunca atrapalhar jogos ou vídeos).
+* **Comentários espontâneos:** comentários curtos ocasionais baseados no horário, janela ativa ou fatos curiosos (com detecção de **tela cheia** para nunca atrapalhar jogos ou vídeos).
 
-### ⚡ Automação no Windows 11 e Voz (STT)
-* **Ações nativas em Rust:** abertura segura de aplicativos e URLs (`ShellExecuteW`), controle de mídia e volume em <1 ms via Win32 (`keybd_event`), leitura nativa do `Ctrl+C` (`arboard`).
-* **Integrações:** busca e reprodução no **Spotify** via Windows UI Automation, envio de mensagens no **WhatsApp** e **Discord DM** preservando o clipboard, e postagem em **Discord Webhook**.
+### ⚡ Automação no Windows 11, Voz Personalizada (TTS) e Microfone (STT)
+* **Voz personalizada com [Fish Audio](https://fish.audio/) (TTS):** síntese de baixa latência direto em Rust, **lip-sync real** sincronizado com a amplitude do áudio (`AnalyserNode`), controle de **volume da voz (0–100%)** e botão de teste nas configurações.
 * **Escuta por voz offline (STT):** captura a 16 kHz com VAD adaptativo, wake-word `"Aster"` e worker persistente em Python com `faster-whisper` (`int8` na CPU), gerenciado e encerrado limpinho pelo Rust.
-* **Painel visual de Configurações (`settings.html`):** edita `.env`, modelo do Whisper, memórias e documentos `docs/` pela própria interface.
+* **Ações nativas em Rust:** abertura segura de aplicativos e URLs (`ShellExecuteW`, incluindo atalhos como `spot` e `dc`), controle de mídia e volume em <1 ms via Win32 (`keybd_event`), leitura nativa do `Ctrl+C` (`arboard`).
+* **Integrações:** busca e reprodução no **Spotify** via Windows UI Automation (ativando o mood `music`), envio de mensagens no **WhatsApp** e **Discord DM** preservando o clipboard, e postagem em **Discord Webhook**.
+* **Painel Glass Gothic de Configurações (`settings.html`):** tipografia `Inter` + ícones SVG minimalistas, status ao vivo de Ollama / Kaida / Fish Audio, editor de `.env`, voz, memórias, RAG, skins e temas.
 
 ---
 
@@ -77,20 +83,22 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 
 ```text
 Aster-Companion/
-├── src/                  # Interface WebView2 (index.html, app.js, settings.html, sprites/)
+├── src/                  # Interface WebView2 (index.html, app.js, settings.html, themes.js, sprites/)
+├── skins/                # Skins customizáveis ao vivo (ex: skins/natalina/)
 ├── src-tauri/
 │   ├── src/
 │   │   ├── lib.rs        # Janela, click-through, System Tray, hotkey Alt+A, drag físico e perch
 │   │   ├── actions.rs    # Win32 mídia, ShellExecuteW, Spotify UIA, WhatsApp e Discord DM
-│   │   ├── brain.rs      # Clientes HTTP (Ollama, Hermes, Discord Webhook) e clipboard
-│   │   ├── config.rs     # Leitura e gravação segura do .env
+│   │   ├── brain.rs      # Clientes HTTP (Ollama, Hermes, Discord Webhook), health check e clipboard
+│   │   ├── config.rs     # Leitura e gravação segura do .env (incluindo volume, skin e tema)
 │   │   ├── memory.rs     # Memória persistente (memory.json)
 │   │   ├── docs.rs       # Busca local em documentos (RAG em docs/)
-│   │   └── voice.rs      # Gerenciamento do worker Python (faster-whisper)
+│   │   ├── skins.rs      # Listagem, criação, checklist e troca de skins ao vivo
+│   │   └── voice.rs      # Worker Python (faster-whisper STT) + síntese Fish Audio (TTS)
 │   └── tauri.conf.json
 ├── transcrever.py        # Worker offline de Speech-to-Text (faster-whisper)
 ├── build_exe.ps1         # Script de build release -> Aster.exe
-├── .env.example          # Template de configuração
+├── .env.example          # Template de configuração (sem chaves reais)
 └── requirements.txt      # Dependências Python do STT
 ```
 
