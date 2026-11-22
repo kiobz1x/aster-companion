@@ -175,3 +175,41 @@ pub fn read_clipboard() -> Result<String, String> {
         Err(e) => Err(e.to_string()),
     }
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ServiceHealth {
+    pub ollama_ok: bool,
+    pub hermes_ok: bool,
+    pub fish_configured: bool,
+}
+
+#[tauri::command]
+pub async fn check_services_health() -> ServiceHealth {
+    let cfg = AppConfig::load();
+    let client = reqwest::Client::builder()
+        .no_proxy()
+        .connect_timeout(Duration::from_secs(2))
+        .timeout(Duration::from_secs(2))
+        .build()
+        .unwrap_or_else(|_| reqwest::Client::new());
+
+    let ollama_base = cfg
+        .ollama_url
+        .split("/api/")
+        .next()
+        .unwrap_or("http://127.0.0.1:11434");
+    let hermes_base = cfg
+        .hermes_url
+        .split("/v1/")
+        .next()
+        .unwrap_or("http://127.0.0.1:8642");
+
+    let o_res = client.get(format!("{ollama_base}/api/tags")).send().await;
+    let h_res = client.get(format!("{hermes_base}/health")).send().await;
+
+    ServiceHealth {
+        ollama_ok: o_res.map(|r| r.status().is_success()).unwrap_or(false),
+        hermes_ok: h_res.map(|r| r.status().is_success()).unwrap_or(false),
+        fish_configured: cfg.tts_enabled == "1" && !cfg.fish_api_key.is_empty(),
+    }
+}

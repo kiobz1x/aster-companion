@@ -3,6 +3,7 @@ mod brain;
 mod config;
 mod docs;
 mod memory;
+mod skins;
 mod voice;
 
 use serde::{Deserialize, Serialize};
@@ -685,7 +686,7 @@ fn open_settings_window_inner(app: &tauri::AppHandle) {
     }
     let _ = WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("settings.html".into()))
         .title("Aster • Configurações")
-        .inner_size(490.0, 590.0)
+        .inner_size(680.0, 560.0)
         .resizable(false)
         .additional_browser_args("--autoplay-policy=no-user-gesture-required")
         .center()
@@ -693,7 +694,7 @@ fn open_settings_window_inner(app: &tauri::AppHandle) {
 }
 
 #[tauri::command]
-fn open_settings(app: tauri::AppHandle) {
+async fn open_settings(app: tauri::AppHandle) {
     open_settings_window_inner(&app);
 }
 
@@ -938,6 +939,7 @@ pub fn run() {
             brain::ask_hermes,
             brain::post_discord_webhook,
             brain::read_clipboard,
+            brain::check_services_health,
             actions::open_app,
             actions::open_url,
             actions::media_control,
@@ -946,11 +948,17 @@ pub fn run() {
             actions::send_discord_dm,
             voice::init_voice,
             voice::transcribe_audio,
+            voice::synthesize_fish_speech,
             voice::stop_voice,
             memory::memory_list,
             memory::memory_add,
             memory::memory_remove,
             memory::memory_clear,
+            skins::skins_list,
+            skins::skins_get_overrides,
+            skins::skins_set_active,
+            skins::skins_create,
+            skins::skins_open_folder,
         ])
         .build(tauri::generate_context!())
         .expect("erro ao construir Aster Companion");

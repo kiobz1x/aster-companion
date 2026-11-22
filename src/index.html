@@ -3,8 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <title>Aster Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    :root {
+      --accent: #8b5cf6;
+      --accent-bright: #a78bfa;
+      --accent-soft: #c4b5fd;
+      --accent-text: #ede9fe;
+      --accent-deep: #5b21b6;
+      --accent-mid: #7c3aed;
+      --accent-rgb: 139, 92, 246;
+      --accent-soft-rgb: 167, 139, 250;
+      --bubble-bg: rgba(13, 11, 20, 0.92);
+      --pill-bg: rgba(15, 12, 24, 0.88);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
     html, body {
       background: transparent;
       overflow: hidden;
@@ -33,31 +55,28 @@
 
     .status-pill {
       pointer-events: none;
-      font-size: 10.5px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: #c4b5fd;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 10px rgba(139, 92, 246, 0.5);
+      color: var(--accent-soft);
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95), 0 0 12px rgba(var(--accent-rgb), 0.55);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
+      transition: color 0.25s ease;
     }
-    .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #8b5cf6;
-      box-shadow: 0 0 8px #8b5cf6;
+    .status-pill.kaida {
+      color: #7dd3fc;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95), 0 0 12px rgba(56, 189, 248, 0.6);
     }
-    .dot.kaida { background: #38bdf8; box-shadow: 0 0 8px #38bdf8; }
 
     #speech-bubble {
-      background: rgba(13, 11, 20, 0.92);
+      background: var(--bubble-bg);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(139, 92, 246, 0.45);
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), inset 0 0 12px rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(var(--accent-rgb), 0.45);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), inset 0 0 12px rgba(var(--accent-rgb), 0.08);
       border-radius: 14px 14px 4px 14px;
       padding: 10px 13px;
       width: 100%;
@@ -68,10 +87,10 @@
       line-height: 1.42;
       color: #f4f4f5;
       z-index: 5;
-      transition: border-color 0.25s ease, opacity 0.28s ease, transform 0.28s ease;
+      transition: border-color 0.25s ease, background 0.25s ease, opacity 0.28s ease, transform 0.28s ease;
     }
     #speech-bubble::-webkit-scrollbar { width: 4px; }
-    #speech-bubble::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.4); border-radius: 4px; }
+    #speech-bubble::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb), 0.42); border-radius: 4px; }
 
     #aster-wrapper {
       position: relative;
@@ -118,22 +137,28 @@
     #input-box {
       position: relative;
       z-index: 10;
-      width: 100%;
+      width: 96%;
       display: flex;
       align-items: center;
-      background: rgba(13, 11, 20, 0.96);
-      border: 1px solid rgba(161, 161, 170, 0.35);
-      border-radius: 10px;
-      padding: 4px;
+      gap: 4px;
+      background: var(--pill-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.34);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      border-radius: 999px;
+      padding: 4px 5px;
       margin-top: 4px;
-      transition: opacity 0.28s ease, transform 0.28s ease;
+      transition: opacity 0.28s ease, transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
     }
-    #input-box:focus-within { border-color: #8b5cf6; }
+    #input-box:focus-within {
+      border-color: rgba(var(--accent-soft-rgb), 0.85);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), 0 0 18px rgba(var(--accent-rgb), 0.35);
+    }
 
     .ui-hidden {
       opacity: 0 !important;
       pointer-events: none !important;
-      transform: translateY(6px);
+      transform: translateY(10px) scale(0.92);
     }
 
     #mic-indicator {
@@ -163,8 +188,8 @@
       position: absolute;
       pointer-events: none;
       font-size: 16px;
-      color: #c4b5fd;
-      text-shadow: 0 0 10px rgba(167, 139, 250, 0.9), 0 2px 4px rgba(0, 0, 0, 0.8);
+      color: var(--accent-soft);
+      text-shadow: 0 0 10px rgba(var(--accent-soft-rgb), 0.9), 0 2px 4px rgba(0, 0, 0, 0.8);
       animation: patFloat 1.15s ease-out forwards;
       z-index: 12;
     }
@@ -174,47 +199,66 @@
       100% { opacity: 0; transform: translate(calc(var(--dx, 0px) * 1.8), -58px) scale(0.85); }
     }
 
-    #mic-btn {
-      background: rgba(139, 92, 246, 0.15);
-      color: #c4b5fd;
-      border: 1px solid rgba(139, 92, 246, 0.35);
-      border-radius: 7px;
-      padding: 5px 8px;
-      margin-right: 4px;
-      font-size: 13px;
+    .pill-icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(var(--accent-rgb), 0.14);
+      color: var(--accent-soft);
+      border: 1px solid rgba(var(--accent-rgb), 0.28);
+      font-size: 12.5px;
       cursor: pointer;
-      transition: all 0.2s;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .pill-icon-btn:hover {
+      background: rgba(var(--accent-rgb), 0.28);
+      transform: scale(1.06);
     }
     #mic-btn.listening {
-      background: rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.28);
       border-color: #ef4444;
       color: #fca5a5;
-      box-shadow: 0 0 10px rgba(239, 68, 68, 0.45);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
     }
 
     #user-input {
       flex: 1;
+      min-width: 0;
       background: transparent;
       border: none;
       outline: none;
       color: #f4f4f5;
       font-size: 12px;
-      padding: 6px;
+      padding: 5px 6px;
       user-select: text;
     }
     #user-input::placeholder { color: #71717a; }
 
     #send-btn {
-      background: linear-gradient(135deg, #6d28d9, #4c1d95);
-      color: #f5f3ff;
-      border: 1px solid rgba(196, 181, 253, 0.3);
-      border-radius: 7px;
-      padding: 6px 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(var(--accent-rgb), 0.35);
+      color: var(--accent-text);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.28);
       font-size: 12px;
-      font-weight: 600;
       cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    #send-btn:hover { filter: brightness(1.15); }
+    #send-btn.ready {
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.55);
+    }
+    #send-btn:hover { transform: scale(1.08); filter: brightness(1.15); }
 
     @keyframes breathe {
       0%, 100% { transform: scaleY(1) scaleX(1) translateY(0); }
@@ -231,14 +275,13 @@
 </head>
 <body>
   <div id="drag-header" data-tauri-drag-region>
-    <div class="status-pill">
-      <span id="mode-dot" class="dot"></span>
-      <span id="mode-label">Aster • Tauri</span>
+    <div id="status-pill" class="status-pill">
+      <span id="mode-label">Aster</span>
     </div>
   </div>
 
   <div id="speech-bubble">
-    <div id="speech-text">Tô na área, Kio. Digita aí ou clica no microfone pra me chamar por voz.</div>
+    <div id="speech-text">Tô na área, Kio. Clica em mim ou aperta Alt+A pra conversar.</div>
   </div>
 
   <div id="aster-wrapper" title="Clique para abrir/fechar chat • Arraste para mover">
@@ -247,11 +290,19 @@
   </div>
 
   <div id="input-box">
-    <button id="mic-btn" title="Ligar/Desligar escuta por voz ('Aster...')">🎤</button>
+    <button id="mic-btn" class="pill-icon-btn" title="Ligar/Desligar microfone ('Aster...')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+    </button>
     <input id="user-input" type="text" placeholder="Falar com Aster..." autocomplete="off" />
-    <button id="send-btn">Enviar</button>
+    <button id="cfg-btn" class="pill-icon-btn" title="Configurações &amp; Memória">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <button id="send-btn" title="Enviar (Enter)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+    </button>
   </div>
 
+  <script src="themes.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

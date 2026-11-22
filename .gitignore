@@ -3,6 +3,9 @@
 memory.json
 docs/
 
+# Skins privadas/locais (não subir para o Git)
+skins/akali/
+
 # Binários compilados (suba o Aster.exe na aba Releases do GitHub)
 Aster.exe
 

@@ -10,15 +10,16 @@ const speechBubble = document.getElementById('speech-bubble');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 const micBtn = document.getElementById('mic-btn');
+const cfgBtn = document.getElementById('cfg-btn');
 const micIndicator = document.getElementById('mic-indicator');
-const modeDot = document.getElementById('mode-dot');
+const statusPill = document.getElementById('status-pill');
 const modeLabel = document.getElementById('mode-label');
 const dragHeader = document.getElementById('drag-header');
 const wrapper = document.getElementById('aster-wrapper');
 const sprite = document.getElementById('aster-sprite');
 const inputBox = document.getElementById('input-box');
 
-const SPRITES = {
+const DEFAULT_SPRITES = {
   idle:      'sprites/aster_idle.png',
   blink:     'sprites/aster_blink.png',
   talk:      'sprites/aster_talk.png',
@@ -41,7 +42,9 @@ const SPRITES = {
   walk8:     'sprites/aster_walk_8.png',
 };
 
-const WALK_FRAMES = [
+const SPRITES = { ...DEFAULT_SPRITES };
+
+let WALK_FRAMES = [
   SPRITES.walk1,
   SPRITES.walk2,
   SPRITES.walk3,
@@ -52,10 +55,68 @@ const WALK_FRAMES = [
   SPRITES.walk8,
 ];
 
-Object.values(SPRITES).forEach((src) => {
-  const img = new Image();
-  img.src = src;
-});
+function rebuildWalkFrames() {
+  WALK_FRAMES = [
+    SPRITES.walk1,
+    SPRITES.walk2,
+    SPRITES.walk3,
+    SPRITES.walk4,
+    SPRITES.walk5,
+    SPRITES.walk6,
+    SPRITES.walk7,
+    SPRITES.walk8,
+  ];
+}
+
+function preloadSprites() {
+  Object.values(SPRITES).forEach((src) => {
+    const img = new Image();
+    img.src = src;
+  });
+}
+
+async function applySkin(skinId) {
+  Object.assign(SPRITES, DEFAULT_SPRITES);
+  if (invoke) {
+    try {
+      const overrides = (await invoke('skins_get_overrides', { skinId: skinId || null })) || {};
+      const hasAny = Object.keys(overrides).length > 0;
+      for (const [key, dataUri] of Object.entries(overrides)) {
+        if (key in SPRITES && dataUri) {
+          SPRITES[key] = dataUri;
+        }
+      }
+      // Fallback inteligente dentro da própria skin: com os 6 essenciais nunca volta pro visual padrão
+      if (hasAny) {
+        const skinBase = overrides.idle || Object.values(overrides)[0];
+        if (!overrides.talk && overrides.talk_calm) SPRITES.talk = overrides.talk_calm;
+        if (!overrides.talk_calm && overrides.talk) SPRITES.talk_calm = overrides.talk;
+        if (!overrides.talk && !overrides.talk_calm) {
+          SPRITES.talk = skinBase;
+          SPRITES.talk_calm = skinBase;
+        }
+        if (!overrides.listen) SPRITES.listen = overrides.think || skinBase;
+        if (!overrides.sleepy) SPRITES.sleepy = overrides.blink || skinBase;
+        if (!overrides.blink) SPRITES.blink = overrides.sleepy || skinBase;
+        if (!overrides.smug) SPRITES.smug = skinBase;
+        if (!overrides.angry) SPRITES.angry = skinBase;
+        if (!overrides.music) SPRITES.music = overrides.smug || skinBase;
+        if (!overrides.think) SPRITES.think = skinBase;
+        if (!overrides.drag) SPRITES.drag = skinBase;
+        if (!overrides.sit) SPRITES.sit = skinBase;
+      }
+    } catch (e) {
+      console.warn('[applySkin]', e);
+    }
+  }
+  rebuildWalkFrames();
+  preloadSprites();
+  if (sprite && !isWalking) {
+    sprite.src = SPRITES[currentMood] || SPRITES.idle;
+  }
+}
+
+preloadSprites();
 
 const ASTER_SYSTEM = `Você é Aster, assistente pessoal de desktop do Kio no Windows 11.
 Você TEM controle total do PC do Kio através das tags de ação abaixo. Nunca diga que não consegue fazer algo no PC.
@@ -89,7 +150,7 @@ let history = [{ role: 'system', content: ASTER_SYSTEM }];
 function buildSystemPrompt() {
   if (!savedMemories.length) return ASTER_SYSTEM;
   const list = savedMemories.map((f, i) => `${i + 1}. ${f}`).join('\n');
-  return `${ASTER_SYSTEM}\n\n[Memórias salvas sobre o Kio — use quando relevante]:\n${list}`;
+  return `${ASTER_SYSTEM}\n\n[Memórias salvas — SEMPRE use estes dados reais ao preencher tags como [SPOTIFY_PLAY: ...], [WPP: ...] ou [DISCORD_DM: ...], inclusive quando o Kio pedir "sua/minha música favorita" ou usar apelidos]:\n${list}`;
 }
 
 async function refreshMemories() {
@@ -118,6 +179,21 @@ let perchWatchTimer = null;
 let perchLeaveTimer = null;
 let spontaneousEnabled = true;
 let chatterTimer = null;
+let ttsVolume = 0.7;
+
+async function refreshTtsVolume() {
+  if (!invoke) return;
+  try {
+    const cfg = await invoke('get_settings');
+    const v = Number(cfg?.tts_volume ?? 70);
+    if (Number.isFinite(v)) {
+      ttsVolume = Math.max(0, Math.min(1, v / 100));
+    }
+    if (cfg?.ui_theme && window.applyAsterTheme) {
+      window.applyAsterTheme(cfg.ui_theme);
+    }
+  } catch (_) {}
+}
 
 // ============================================================================
 // 1. CLICK-THROUGH INTELIGENTE + MODO TELA LIMPA (AUTO-OCULTAR UI)
@@ -265,8 +341,11 @@ function triggerBounce() {
 }
 
 function setMood(mood) {
-  currentMood = SPRITES[mood] ? mood : 'idle';
-  sprite.src = SPRITES[currentMood];
+  const effectiveMood = (perchedHwnd !== null && mood !== 'drag') ? 'sit' : mood;
+  currentMood = SPRITES[effectiveMood] ? effectiveMood : 'idle';
+  if (!isWalking) {
+    sprite.src = SPRITES[currentMood];
+  }
 }
 
 function resetIdleTimer() {
@@ -544,11 +623,11 @@ function startPendulumDecay() {
   stopPendulumDecay();
   const tick = () => {
     if (isDragging) return;
-    const spring = -pendulumAngle * 0.16;
-    pendulumVel = (pendulumVel + spring) * 0.80;
+    const spring = -pendulumAngle * 0.11;
+    pendulumVel = (pendulumVel + spring) * 0.85;
     pendulumAngle += pendulumVel;
 
-    if (Math.abs(pendulumAngle) < 0.25 && Math.abs(pendulumVel) < 0.25) {
+    if (Math.abs(pendulumAngle) < 0.2 && Math.abs(pendulumVel) < 0.2) {
       pendulumAngle = 0;
       pendulumVel = 0;
       sprite.classList.remove('dragging-pendulum');
@@ -602,13 +681,13 @@ async function beginPendulumDrag() {
     lastCx = res.cx;
     if (!res.pressed) break;
 
-    // Física de pêndulo: arrastar pra direita (+vx) balança ela pra esquerda (-ângulo)
-    const vxClamped = Math.max(-60, Math.min(60, res.vx));
+    // Física real de pêndulo (pivô no topo): arrastar pra direita (+vx) joga as pernas pra trás/esquerda (+ângulo horário)
+    const vxClamped = Math.max(-45, Math.min(45, res.vx));
     maxShake = Math.max(maxShake, Math.abs(vxClamped));
-    const inertia = -vxClamped * 0.44;
-    const spring = -pendulumAngle * 0.15;
-    pendulumVel = (pendulumVel + inertia + spring) * 0.82;
-    pendulumAngle = Math.max(-36, Math.min(36, pendulumAngle + pendulumVel));
+    const inertia = vxClamped * 0.18;
+    const spring = -pendulumAngle * 0.10;
+    pendulumVel = (pendulumVel + inertia + spring) * 0.84;
+    pendulumAngle = Math.max(-24, Math.min(24, pendulumAngle + pendulumVel));
     sprite.style.setProperty('--tilt', `${pendulumAngle.toFixed(2)}deg`);
 
     await new Promise((r) => requestAnimationFrame(r));
@@ -629,9 +708,11 @@ async function beginPendulumDrag() {
   if (perched) {
     setMood('sit');
     showBubble('Acomodei aqui em cima.', 3200);
+    if (spontaneousEnabled) speakVoice('Acomodei aqui em cima.');
   } else if (maxShake > 32 && !isSpeaking && !isThinking) {
     setMood('angry');
     showBubble('Ei, não me chacoalha assim!', 3500);
+    if (spontaneousEnabled) speakVoice('Ei, não me chacoalha assim!');
     setTimeout(() => {
       if (currentMood === 'angry' && !isSpeaking && !isThinking && !ttsPlaying) setMood('idle');
     }, 3200);
@@ -736,6 +817,7 @@ function triggerHeadpat() {
   const pick = HEADPAT_LINES[Math.floor(Math.random() * HEADPAT_LINES.length)];
   setMood(pick.mood);
   showBubble(pick.text, 4500);
+  if (spontaneousEnabled) speakVoice(pick.text);
 
   clearTimeout(patResetTimer);
   patResetTimer = setTimeout(() => {
@@ -779,11 +861,11 @@ wrapper.addEventListener('mousemove', (e) => {
 
 function setMode(isKaida) {
   if (isKaida) {
-    modeDot.classList.add('kaida');
-    modeLabel.innerText = 'Kaida • Hermes';
+    statusPill?.classList.add('kaida');
+    modeLabel.innerText = '✦ Kaida';
   } else {
-    modeDot.classList.remove('kaida');
-    modeLabel.innerText = 'Aster • Local';
+    statusPill?.classList.remove('kaida');
+    modeLabel.innerText = 'Aster';
   }
 }
 
@@ -796,6 +878,7 @@ function runLocalActions(rawText) {
   }
 
   for (const m of rawText.matchAll(/\[SPOTIFY_PLAY:\s*(.+?)\]/gi)) {
+    setMood('music');
     invoke('play_spotify', { query: m[1].trim() }).catch((e) => console.error('[play_spotify]', e));
   }
 
@@ -845,6 +928,27 @@ async function tryDirectLocalCommand(message) {
   if (/^(?:\/docs|abre\s+(?:a\s+)?pasta\s+docs)$/i.test(trimmed)) {
     await invoke('docs_open_folder');
     return '[MOOD: idle] Abrindo a pasta docs/. Joga seus .txt ou .md lá dentro.';
+  }
+  if (/^(?:\/skins|abre\s+(?:a\s+)?pasta\s+skins)$/i.test(trimmed)) {
+    await invoke('skins_open_folder');
+    return '[MOOD: idle] Abrindo a pasta skins/. Cria uma pasta por skin e joga os PNGs lá.';
+  }
+  const skinMatch =
+    trimmed.match(/^\/skin\s+(.+)/i) ||
+    trimmed.match(/^(?:coloca|usa|usar|troca|muda|ativa|veste)(?:\s+a|\s+para\s+a|\s+pra)?\s+skin\s+(?:da\s+|do\s+|de\s+)?(.+)/i) ||
+    trimmed.match(/^volta\s+(?:para\s+a|pra)\s+skin\s+(padr[ãa]o|original|normal)/i);
+  if (skinMatch) {
+    const rawName = skinMatch[1].trim().replace(/[?.!]+$/, '').toLowerCase();
+    const targetId = /^(?:padr[ãa]o|padrao|default|original|normal)$/.test(rawName) ? 'padrao' : rawName;
+    try {
+      await invoke('skins_set_active', { skinId: targetId });
+      await applySkin(targetId);
+      return targetId === 'padrao'
+        ? '[MOOD: idle] Voltando pro meu visual padrão.'
+        : `[MOOD: smug] Skin ${targetId} equipada.`;
+    } catch (e) {
+      return `[MOOD: angry] Não achei a skin "${rawName}". Confere se a pasta existe em skins/.`;
+    }
   }
   if (/^\/comentar$/i.test(trimmed)) {
     setTimeout(() => triggerSpontaneousComment(true), 120);
@@ -931,14 +1035,17 @@ async function tryDirectLocalCommand(message) {
     return `[MOOD: smug] Eu lembro disso: ${resumo}`;
   }
 
-  // 1. Tocar música específica no Spotify
+  // 1. Tocar música específica no Spotify (aceita "spotify" ou "spot"; se for referência à memória como "favorita", deixa o Ollama resolver!)
   const spotifyPlayMatch =
-    trimmed.match(/(?:toca|tocar|coloca|colocar|bota|botar|pesquisa|pesquisar|ouvir)\s+(.+?)\s+(?:no\s+spotify|na\s+m[úu]sica)/i) ||
-    trimmed.match(/(?:abre|abrir)\s+(?:o\s+)?spotify\s+(?:e\s+)?(?:toca|tocar|coloca|pesquisa|bota)\s+(.+)/i);
+    trimmed.match(/(?:toca|tocar|coloca|colocar|bota|botar|p[õo]e|por|pesquisa|pesquisar|ouvir)\s+(.+?)\s+(?:no\s+(?:spotify|spot)|na\s+m[úu]sica)/i) ||
+    trimmed.match(/(?:abre|abrir)\s+(?:o\s+)?(?:spotify|spot)\s+(?:e\s+)?(?:toca|tocar|coloca|p[õo]e|pesquisa|bota)\s+(.+)/i);
   if (spotifyPlayMatch) {
     const musica = spotifyPlayMatch[1].trim();
-    await invoke('play_spotify', { query: musica });
-    return `[MOOD: music] Colocando "${musica}" no Spotify.`;
+    const isMemoryRef = /\b(favorit[ao]|preferid[ao]|que\s+(?:eu|voc[êe])\s+gost|aquela\s+m[úu]sica)\b/i.test(musica);
+    if (!isMemoryRef) {
+      await invoke('play_spotify', { query: musica });
+      return `[MOOD: music] Colocando "${musica}" no Spotify.`;
+    }
   }
 
   // 2. Controles rápidos de mídia e volume (Win32 nativo, instantâneo)
@@ -978,8 +1085,8 @@ async function tryDirectLocalCommand(message) {
     return `[MOOD: smug] Abrindo o WhatsApp e mandando "${texto}" pro ${contato}.`;
   }
 
-  // 4. Discord DM direto
-  if (/discord/i.test(trimmed) && /(?:conversa\s+com|pro|pra|para|dm)\s+/i.test(trimmed)) {
+  // 4. Discord DM direto (aceita "discord" ou "dc")
+  if (/\b(?:discord|dc)\b/i.test(trimmed) && /(?:conversa\s+com|pro|pra|para|dm)\s+/i.test(trimmed)) {
     const dmRegex = /(?:conversa\s+com|pro|pra|para|dm\s+(?:pro|pra|para)?)\s+([a-zA-ZÀ-ÿ0-9_.\s]+?)(?:\s+e\s+(?:envia|enviar|manda|mandar|diz|diga)|\s+(?:dizendo|falando|que|:))\s+(.+)/i;
     const dmMatch = trimmed.match(dmRegex);
     if (dmMatch) {
@@ -1011,10 +1118,10 @@ const FRAME_MS = (VOICE_FRAME / SAMPLE_RATE) * 1000;
 const PREROLL_FRAMES = 4;
 const START_FRAMES = 2;
 const MIN_VOICED_FRAMES = 3;
-const END_SILENCE_MS = 800;
+const END_SILENCE_MS = 750;
 const MAX_PHRASE_MS = 9000;
-const MIN_START_RMS = 0.015;
-const MIN_KEEP_RMS = 0.010;
+const MIN_START_RMS = 0.008;
+const MIN_KEEP_RMS = 0.005;
 const WAKE_WINDOW_MS = 12000;
 
 let voiceEnabled = false;
@@ -1074,29 +1181,45 @@ function base64ToBlobUrl(base64, mime) {
   return URL.createObjectURL(new Blob([bytes], { type: mime }));
 }
 
-function encodeWAVBase64(samples, sampleRate) {
-  const buffer = new ArrayBuffer(44 + samples.length * 2);
+function downsampleTo16k(samples, inputRate) {
+  if (!inputRate || inputRate === SAMPLE_RATE) return samples;
+  const ratio = inputRate / SAMPLE_RATE;
+  const newLen = Math.max(1, Math.round(samples.length / ratio));
+  const out = new Float32Array(newLen);
+  for (let i = 0; i < newLen; i++) {
+    const pos = i * ratio;
+    const i0 = Math.floor(pos);
+    const i1 = Math.min(samples.length - 1, i0 + 1);
+    const frac = pos - i0;
+    out[i] = samples[i0] * (1 - frac) + samples[i1] * frac;
+  }
+  return out;
+}
+
+function encodeWAVBase64(samples, inputRate) {
+  const pcm16k = downsampleTo16k(samples, inputRate);
+  const buffer = new ArrayBuffer(44 + pcm16k.length * 2);
   const view = new DataView(buffer);
   const writeStr = (off, str) => {
     for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i));
   };
   writeStr(0, 'RIFF');
-  view.setUint32(4, 36 + samples.length * 2, true);
+  view.setUint32(4, 36 + pcm16k.length * 2, true);
   writeStr(8, 'WAVE');
   writeStr(12, 'fmt ');
   view.setUint32(16, 16, true);
   view.setUint16(20, 1, true);
   view.setUint16(22, 1, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
+  view.setUint32(24, SAMPLE_RATE, true);
+  view.setUint32(28, SAMPLE_RATE * 2, true);
   view.setUint16(32, 2, true);
   view.setUint16(34, 16, true);
   writeStr(36, 'data');
-  view.setUint32(40, samples.length * 2, true);
+  view.setUint32(40, pcm16k.length * 2, true);
 
   let offset = 44;
-  for (let i = 0; i < samples.length; i++, offset += 2) {
-    const s = Math.max(-1, Math.min(1, samples[i]));
+  for (let i = 0; i < pcm16k.length; i++, offset += 2) {
+    const s = Math.max(-1, Math.min(1, pcm16k[i]));
     view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
   }
   return uint8ToBase64(new Uint8Array(buffer));
@@ -1125,6 +1248,7 @@ async function playTtsPayload(audioBase64, mime) {
   stopCurrentAudio();
   const url = base64ToBlobUrl(audioBase64, mime);
   const audio = new Audio(url);
+  audio.volume = ttsVolume;
   currentAudioPlayer = audio;
   currentAudioUrl = url;
   ttsPlaying = true;
@@ -1168,8 +1292,9 @@ async function playTtsPayload(audioBase64, mime) {
       smoothAmp = smoothAmp * 0.72 + amp * 0.28;
 
       const now = performance.now();
+      const isSeated = currentMood === 'sit' || perchedHwnd !== null;
       const talkSprite = currentMood === 'idle' ? SPRITES.talk_calm : SPRITES.talk;
-      if (now - lastSwitchAt >= MIN_HOLD_MS) {
+      if (!isWalking && !isSeated && now - lastSwitchAt >= MIN_HOLD_MS) {
         if (!isTalkFrame && smoothAmp > 6.0) {
           isTalkFrame = true;
           lastSwitchAt = now;
@@ -1200,7 +1325,9 @@ async function playTtsPayload(audioBase64, mime) {
       URL.revokeObjectURL(url);
       currentAudioUrl = null;
     }
-    sprite.src = SPRITES[currentMood] || SPRITES.idle;
+    if (!isWalking) {
+      sprite.src = SPRITES[currentMood] || SPRITES.idle;
+    }
     voiceIgnoreUntil = Date.now() + 650; // trava anti-eco após terminar de falar
     scheduleBubbleAutoHide(7000);
     resetIdleTimer();
@@ -1218,8 +1345,21 @@ async function playTtsPayload(audioBase64, mime) {
   }
 }
 
-async function speakVoice() {
-  // TTS falado desativado (modo visual novel / somente balão)
+async function speakVoice(text) {
+  const clean = text.replace(/\|/g, ' ').replace(/\r?\n/g, ' ').trim();
+  if (!clean) return;
+  setTtsPending(true);
+  try {
+    const payload = await invoke('synthesize_fish_speech', { text: clean });
+    if (!payload || !payload.audio_base64) {
+      setTtsPending(false);
+      return;
+    }
+    await playTtsPayload(payload.audio_base64, payload.mime);
+  } catch (e) {
+    console.error('[Fish Audio TTS]', e);
+    setTtsPending(false);
+  }
 }
 
 // ============================================================================
@@ -1257,6 +1397,7 @@ async function triggerSpontaneousComment(force = false) {
       ttsPending ||
       isListeningVoice ||
       isDragging ||
+      isWalking ||
       wrapper.classList.contains('sleeping');
     if (busy) return;
   }
@@ -1272,10 +1413,10 @@ async function triggerSpontaneousComment(force = false) {
   const now = new Date();
   const hour = now.getHours();
   const hhmm = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const roll = Math.random();
 
-  // 55% comentário contextual pelo Ollama (se houver janela aberta), 45% frase solta
-  const useContext = ctx.title && (force || Math.random() < 0.55);
-  if (useContext) {
+  // 45% comentário sobre a janela ativa na tela, 30% fato curioso/aleatório, 25% frase solta
+  if (ctx.title && (roll < 0.45 || (force && roll < 0.6))) {
     try {
       const prompt = `Agora são ${hhmm}. A janela aberta do Kio é: "${ctx.title.slice(0, 100)}". Faça UM comentário espontâneo bem curto (máximo 1 frase, humor seco e amigável, sem tags de ação além de [MOOD: idle] ou [MOOD: smug]).`;
       const reply = await invoke('chat_ollama', {
@@ -1286,16 +1427,33 @@ async function triggerSpontaneousComment(force = false) {
           },
           { role: 'user', content: prompt },
         ],
-        temperature: 0.85,
+        temperature: 0.88,
         numCtx: 1024,
       });
       if (reply && reply.trim()) {
         await speakText(reply, true);
         return;
       }
-    } catch (_) {
-      // Se o Ollama estiver desligado, cai suavemente numa frase solta
-    }
+    } catch (_) {}
+  } else if (roll < 0.78 || force) {
+    try {
+      const prompt = 'Conte UM fato curioso, aleatório e realmente interessante (de ciência, tecnologia, games, música ou cultura pop) em no máximo 1 frase curta e informal no seu estilo seco.';
+      const reply = await invoke('chat_ollama', {
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é Aster, assistente de desktop do Kio. Personalidade seca, inteligente e informal em PT-BR. Comece com [MOOD: smug] ou [MOOD: idle] seguido de 1 frase bem curta.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.95,
+        numCtx: 1024,
+      });
+      if (reply && reply.trim()) {
+        await speakText(reply, true);
+        return;
+      }
+    } catch (_) {}
   }
 
   const pick =
@@ -1307,8 +1465,8 @@ async function triggerSpontaneousComment(force = false) {
 
 function scheduleNextChatter(customDelayMs) {
   clearTimeout(chatterTimer);
-  // Entre 18 e 32 minutos naturalmente (sem ser chata)
-  const delay = typeof customDelayMs === 'number' ? customDelayMs : (18 + Math.random() * 14) * 60 * 1000;
+  // Entre 6 e 12 minutos (mais frequente e animada, sem ser chata)
+  const delay = typeof customDelayMs === 'number' ? customDelayMs : (6 + Math.random() * 6) * 60 * 1000;
   chatterTimer = setTimeout(() => {
     triggerSpontaneousComment(false);
     scheduleNextChatter();
@@ -1413,7 +1571,8 @@ async function finishPhrase(frames) {
       for (let i = 0; i < c.length; i++) sq += c[i] * c[i];
     }
     const meanRms = Math.sqrt(sq / total);
-    const wavBase64 = encodeWAVBase64(merged, SAMPLE_RATE);
+    const inputRate = micAudioCtx?.sampleRate || SAMPLE_RATE;
+    const wavBase64 = encodeWAVBase64(merged, inputRate);
 
     showBubble('🎧 Processando...', 0);
     const heard = await invoke('transcribe_audio', { wavBase64 });
@@ -1424,7 +1583,7 @@ async function finishPhrase(frames) {
     if (heard) {
       handleSpokenText(heard);
     } else {
-      voiceState.noise = Math.min(0.08, Math.max(voiceState.noise, meanRms * 0.5));
+      voiceState.noise = Math.min(0.025, Math.max(voiceState.noise, meanRms * 0.45));
       showBubble('🎙️ Escutando... (diga "Aster" + pedido)', 4000);
     }
   } catch (err) {
@@ -1448,8 +1607,12 @@ async function startMicCapture() {
     return;
   }
 
-  micAudioCtx = new AudioContext({ sampleRate: SAMPLE_RATE });
+  // Usa a taxa nativa do dispositivo (ex: 48kHz) e faz downsample pra 16kHz no WAV
+  // (evita áudio zerado em drivers Windows/WebView2 que rejeitam AudioContext 16kHz)
+  micAudioCtx = new AudioContext();
   if (micAudioCtx.state === 'suspended') await micAudioCtx.resume();
+  const actualFrameMs = (VOICE_FRAME / micAudioCtx.sampleRate) * 1000;
+  const prerollMax = Math.max(4, Math.round(500 / actualFrameMs));
 
   const source = micAudioCtx.createMediaStreamSource(micStream);
   micProcessor = micAudioCtx.createScriptProcessor(VOICE_FRAME, 1, 1);
@@ -1497,20 +1660,20 @@ async function startMicCapture() {
       calibSum += rms;
       calibFrames++;
       if (calibFrames === 8) {
-        voiceState.noise = Math.min(0.08, calibSum / 8);
-        vlog(`calibrado: noise=${voiceState.noise.toFixed(4)}`);
+        voiceState.noise = Math.min(0.025, calibSum / 8);
+        vlog(`calibrado: noise=${voiceState.noise.toFixed(4)} rate=${micAudioCtx.sampleRate}`);
       }
       return;
     }
 
-    const startThr = Math.max(MIN_START_RMS, voiceState.noise * 2.5);
-    const keepThr = Math.max(MIN_KEEP_RMS, voiceState.noise * 1.8);
+    const startThr = Math.max(MIN_START_RMS, voiceState.noise * 2.0);
+    const keepThr = Math.max(MIN_KEEP_RMS, voiceState.noise * 1.5);
     const voiced = rms > (capturing ? keepThr : startThr);
     const frame = new Float32Array(input);
 
     if (!capturing) {
       pre.push(frame);
-      if (pre.length > PREROLL_FRAMES) pre.shift();
+      if (pre.length > prerollMax) pre.shift();
 
       if (voiced) {
         consecutiveVoice++;
@@ -1540,8 +1703,8 @@ async function startMicCapture() {
       silenceFrames++;
     }
 
-    const endedBySilence = silenceFrames * FRAME_MS >= END_SILENCE_MS;
-    const endedByLength = chunks.length * FRAME_MS >= MAX_PHRASE_MS;
+    const endedBySilence = silenceFrames * actualFrameMs >= END_SILENCE_MS;
+    const endedByLength = chunks.length * actualFrameMs >= MAX_PHRASE_MS;
     if (endedBySilence || endedByLength) {
       const frames = chunks;
       const voicedCount = voicedFrames;
@@ -1635,7 +1798,12 @@ async function speakText(rawText, forceVoice = false) {
   const moodMatch = rawText.match(/\[MOOD:\s*(smug|angry|idle|sleepy|think|music|listen|drag|sit|blink)\]/i);
   if (moodMatch) mood = moodMatch[1].toLowerCase();
   if (/\[SPOTIFY_PLAY:/i.test(rawText)) mood = 'music';
+  if (perchedHwnd !== null) mood = 'sit';
   currentMood = SPRITES[mood] ? mood : 'idle';
+  const isSeated = currentMood === 'sit' || perchedHwnd !== null;
+  if (isSeated && !isWalking) {
+    sprite.src = SPRITES.sit;
+  }
 
   const cleanText = rawText
     .replace(/\[(MOOD|OPEN_APP|OPEN_URL|SPOTIFY_PLAY|WPP|DISCORD_DM|MEDIA|REMEMBER|DELEGATE):[^\]]+\]/gi, '')
@@ -1643,9 +1811,9 @@ async function speakText(rawText, forceVoice = false) {
 
   const textToShow = cleanText || '...';
 
-  // Se a voz está ligada (ou é fala espontânea), dispara a síntese em paralelo com o texto
-  if ((voiceEnabled || forceVoice) && cleanText) {
-    speakVoice(cleanText, forceVoice);
+  // Dispara síntese Fish Audio em paralelo (silencioso se não configurado ou desligado)
+  if (cleanText) {
+    speakVoice(cleanText);
   }
 
   showBubble('', 0);
@@ -1659,8 +1827,8 @@ async function speakText(rawText, forceVoice = false) {
     speechText.textContent += char;
     speechBubble.scrollTop = speechBubble.scrollHeight;
 
-    // Só anima por texto se o lip-sync do áudio real não estiver ativo
-    if (!ttsPlaying) {
+    // Só anima por texto se o lip-sync do áudio real não estiver ativo e ela não estiver sentada/andando
+    if (!ttsPlaying && !isSeated && !isWalking) {
       const now = performance.now();
       if (/[.!?]/.test(char)) {
         talkOpen = false;
@@ -1678,7 +1846,9 @@ async function speakText(rawText, forceVoice = false) {
 
   isSpeaking = false;
   if (!ttsPlaying) {
-    sprite.src = SPRITES[currentMood];
+    if (!isWalking) {
+      sprite.src = SPRITES[currentMood];
+    }
     scheduleBubbleAutoHide(9000);
   }
   syncHitRects();
@@ -1843,7 +2013,12 @@ sendBtn.addEventListener('click', () => {
   const text = userInput.value.trim();
   if (!text) return;
   userInput.value = '';
+  sendBtn.classList.remove('ready');
   askAster(text);
+});
+
+userInput.addEventListener('input', () => {
+  sendBtn.classList.toggle('ready', userInput.value.trim().length > 0);
 });
 
 userInput.addEventListener('keydown', (e) => {
@@ -1851,12 +2026,54 @@ userInput.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeChat();
 });
 
+cfgBtn?.addEventListener('click', () => {
+  invoke?.('open_settings')?.catch(() => {});
+});
+
+// Placeholders dinâmicos na pílula de chat
+const CHAT_PLACEHOLDERS = [
+  'Falar com Aster...',
+  'Toca algo no Spotify...',
+  'Peça pra Kaida...',
+  'Lembra que...',
+  '/walk • /sit • /comentar',
+];
+let placeholderIdx = 0;
+setInterval(() => {
+  if (document.activeElement !== userInput && !userInput.value) {
+    placeholderIdx = (placeholderIdx + 1) % CHAT_PLACEHOLDERS.length;
+    userInput.placeholder = CHAT_PLACEHOLDERS[placeholderIdx];
+  }
+}, 5000);
+
 setMode(false);
 refreshMemories();
+refreshTtsVolume();
+applySkin();
+tauriEvent?.listen?.('aster-skin-changed', (ev) => {
+  applySkin(typeof ev?.payload === 'string' ? ev.payload : null);
+});
+tauriEvent?.listen?.('aster-settings-updated', (ev) => {
+  const payload = ev?.payload;
+  if (typeof payload === 'number' && Number.isFinite(payload)) {
+    ttsVolume = Math.max(0, Math.min(1, payload / 100));
+    if (currentAudioPlayer) currentAudioPlayer.volume = ttsVolume;
+  } else if (payload && typeof payload === 'object') {
+    if (typeof payload.tts_volume === 'number' && Number.isFinite(payload.tts_volume)) {
+      ttsVolume = Math.max(0, Math.min(1, payload.tts_volume / 100));
+      if (currentAudioPlayer) currentAudioPlayer.volume = ttsVolume;
+    }
+    if (payload.ui_theme && window.applyAsterTheme) {
+      window.applyAsterTheme(payload.ui_theme);
+    }
+  } else {
+    refreshTtsVolume();
+  }
+});
 resetIdleTimer();
 scheduleBlink();
 scheduleNextRoam(14000);
-scheduleNextChatter();
+scheduleNextChatter(210000);
 // Inicia mostrando saudação por 6s e depois recolhe para o modo tela limpa
 scheduleBubbleAutoHide(6500);
 scheduleChatAutoHide(6500);

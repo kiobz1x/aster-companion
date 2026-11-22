@@ -1,6 +1,6 @@
 [package]
 name = "aster-companion"
-version = "0.1.0"
+version = "1.1.0"
 description = "Aster Companion - Assistente de Desktop para Windows 11"
 authors = ["Kio"]
 edition = "2021"
