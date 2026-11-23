@@ -371,7 +371,10 @@ function stopWalking(restoreIdle = true) {
   walkMoveTimer = null;
   walkFrameTimer = null;
   sprite.style.setProperty('--flip', '1');
-  if (restoreIdle && !isSpeaking && !isThinking && !isDragging && !isListeningVoice && !ttsPlaying) {
+  if (restoreIdle && !isDragging) {
+    if (perchedHwnd === null && currentMood !== 'sit') {
+      currentMood = 'idle';
+    }
     sprite.src = SPRITES[currentMood] || SPRITES.idle;
   }
 }
@@ -427,6 +430,7 @@ async function startWalk(force = false) {
 
   isWalking = true;
   resetIdleTimer();
+  scheduleBubbleAutoHide(2500);
   const dir = targetX > bounds.win_x ? 1 : -1;
   sprite.style.setProperty('--flip', dir > 0 ? '1' : '-1');
   sprite.style.setProperty('--tilt', '0deg');
@@ -1353,12 +1357,14 @@ async function speakVoice(text) {
     const payload = await invoke('synthesize_fish_speech', { text: clean });
     if (!payload || !payload.audio_base64) {
       setTtsPending(false);
+      scheduleBubbleAutoHide(5500);
       return;
     }
     await playTtsPayload(payload.audio_base64, payload.mime);
   } catch (e) {
     console.error('[Fish Audio TTS]', e);
     setTtsPending(false);
+    scheduleBubbleAutoHide(5500);
   }
 }
 
