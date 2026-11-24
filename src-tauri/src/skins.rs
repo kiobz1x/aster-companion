@@ -269,6 +269,100 @@ pub fn skins_create(name: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+pub async fn skins_import_folder(skin_id: String, add_outline: bool) -> Result<String, String> {
+    let clean = skin_id.trim().to_string();
+    if clean.is_empty()
+        || clean.eq_ignore_ascii_case("padrao")
+        || clean.contains("..")
+        || clean.contains('/')
+        || clean.contains('\\')
+    {
+        return Err("Skin inválida para importação.".into());
+    }
+
+    let root = find_project_root().ok_or_else(|| "Pasta raiz do projeto não encontrada.".to_string())?;
+    let py_exe = root.join(".venv").join("Scripts").join("python.exe");
+    let script = root.join("processar_skin.py");
+    if !py_exe.is_file() {
+        return Err("Ambiente .venv não encontrado. Crie o .venv e instale rembg + onnxruntime.".into());
+    }
+    if !script.is_file() {
+        return Err("Script processar_skin.py não encontrado na raiz do projeto.".into());
+    }
+
+    let skin_dir = skins_dir_path()?.join(&clean);
+    fs::create_dir_all(&skin_dir).map_err(|e| format!("Erro criando pasta da skin: {e}"))?;
+
+    // Abre seletor nativo de pasta do Windows
+    let selected_dir = tauri::async_runtime::spawn_blocking(move || -> Result<Option<String>, String> {
+        #[cfg(windows)]
+        {
+            let ps = r#"
+Add-Type -AssemblyName System.Windows.Forms
+$dlg = New-Object System.Windows.Forms.FolderBrowserDialog
+$dlg.Description = 'Selecione a pasta com os sprites crus (.webp, .png, .jpg) e/ou .mp4 do walk'
+$dlg.ShowNewFolderButton = $false
+$res = $dlg.ShowDialog()
+if ($res -eq [System.Windows.Forms.DialogResult]::OK) {
+    Write-Output $dlg.SelectedPath
+}
+"#;
+            let mut cmd = Command::new("powershell");
+            cmd.args(["-NoProfile", "-STA", "-Command", ps]);
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let out = cmd.output().map_err(|e| format!("Erro abrindo seletor de pasta: {e}"))?;
+            let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if path.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(path))
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            Err("Importador disponível apenas no Windows.".into())
+        }
+    })
+    .await
+    .map_err(|e| format!("Erro no seletor: {e}"))??;
+
+    let Some(input_dir) = selected_dir else {
+        return Ok("Importação cancelada.".into());
+    };
+
+    let outline_arg = if add_outline { "2" } else { "0" };
+    tauri::async_runtime::spawn_blocking(move || -> Result<String, String> {
+        let mut cmd = Command::new(&py_exe);
+        cmd.arg(&script)
+            .arg("--input-dir")
+            .arg(&input_dir)
+            .arg("--skin-dir")
+            .arg(&skin_dir)
+            .arg("--outline")
+            .arg(outline_arg);
+        #[cfg(windows)]
+        {
+            cmd.creation_flags(CREATE_NO_WINDOW);
+        }
+        let out = cmd
+            .output()
+            .map_err(|e| format!("Erro executando processar_skin.py: {e}"))?;
+        if !out.status.success() {
+            let err = String::from_utf8_lossy(&out.stderr);
+            return Err(format!("Falha no processamento: {}", err.chars().take(240).collect::<String>()));
+        }
+        let msg = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        Ok(if msg.is_empty() {
+            "Importação concluída.".into()
+        } else {
+            msg
+        })
+    })
+    .await
+    .map_err(|e| format!("Erro na thread de importação: {e}"))?
+}
+
+#[tauri::command]
 pub fn skins_open_folder() -> Result<(), String> {
     let dir = skins_dir_path()?;
     #[cfg(windows)]

@@ -2,6 +2,7 @@ mod actions;
 mod brain;
 mod config;
 mod docs;
+mod media;
 mod memory;
 mod skins;
 mod voice;
@@ -916,6 +917,11 @@ pub fn run() {
                 });
             }
 
+            // Garante Ollama rodando em segundo plano sem atrasar a abertura da Aster
+            tauri::async_runtime::spawn(async {
+                brain::ensure_ollama_running().await;
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -936,6 +942,9 @@ pub fn run() {
             docs::docs_open_folder,
             docs::docs_search,
             brain::chat_ollama,
+            brain::chat_ollama_stream,
+            brain::ask_ollama_vision,
+            brain::list_ollama_models,
             brain::ask_hermes,
             brain::post_discord_webhook,
             brain::read_clipboard,
@@ -958,7 +967,9 @@ pub fn run() {
             skins::skins_get_overrides,
             skins::skins_set_active,
             skins::skins_create,
+            skins::skins_import_folder,
             skins::skins_open_folder,
+            media::get_now_playing,
         ])
         .build(tauri::generate_context!())
         .expect("erro ao construir Aster Companion");

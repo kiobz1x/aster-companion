@@ -67,7 +67,7 @@
       gap: 5px;
       transition: color 0.25s ease;
     }
-    .status-pill.kaida {
+    .status-pill.hermes {
       color: #7dd3fc;
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95), 0 0 12px rgba(56, 189, 248, 0.6);
     }
@@ -199,6 +199,33 @@
       100% { opacity: 0; transform: translate(calc(var(--dx, 0px) * 1.8), -58px) scale(0.85); }
     }
 
+    #ambient-particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .ambient-dot {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      opacity: 0;
+      will-change: transform, opacity;
+    }
+    @keyframes ambientFall {
+      0%   { opacity: 0; transform: translate(0, -12px) rotate(0deg); }
+      18%  { opacity: var(--p-op, 0.55); }
+      82%  { opacity: var(--p-op, 0.45); }
+      100% { opacity: 0; transform: translate(var(--p-dx, 16px), 340px) rotate(140deg); }
+    }
+    @keyframes ambientRise {
+      0%   { opacity: 0; transform: translate(0, 12px) scale(0.7); }
+      22%  { opacity: var(--p-op, 0.48); }
+      80%  { opacity: var(--p-op, 0.35); }
+      100% { opacity: 0; transform: translate(var(--p-dx, 10px), -180px) scale(1.1); }
+    }
+
     .pill-icon-btn {
       width: 28px;
       height: 28px;
@@ -274,6 +301,7 @@
   </style>
 </head>
 <body>
+  <div id="ambient-particles"></div>
   <div id="drag-header" data-tauri-drag-region>
     <div id="status-pill" class="status-pill">
       <span id="mode-label">Aster</span>

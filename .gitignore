@@ -12,6 +12,8 @@ Aster.exe
 # Dependências e caches de build
 node_modules/
 .venv/
+__pycache__/
+*.pyc
 src-tauri/target/
 src-tauri/gen/
 

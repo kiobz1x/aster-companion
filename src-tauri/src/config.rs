@@ -2,12 +2,17 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::{OnceLock, RwLock};
 use tauri::{Emitter, Manager};
+
+static CONFIG_CACHE: OnceLock<RwLock<AppConfig>> = OnceLock::new();
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub ollama_url: String,
     pub ollama_model: String,
+    #[serde(default = "default_vision_model")]
+    pub ollama_vision_model: String,
     pub hermes_url: String,
     pub hermes_model: String,
     pub hermes_key: String,
@@ -23,6 +28,16 @@ pub struct AppConfig {
     pub active_skin: String,
     #[serde(default = "default_ui_theme")]
     pub ui_theme: String,
+    #[serde(default = "default_particles_enabled")]
+    pub particles_enabled: String,
+}
+
+fn default_particles_enabled() -> String {
+    "1".to_string()
+}
+
+fn default_vision_model() -> String {
+    "qwen2.5vl:3b".to_string()
 }
 
 fn default_tts_volume() -> String {
@@ -148,11 +163,12 @@ fn clean_env_val(s: &str) -> String {
 }
 
 impl AppConfig {
-    pub fn load() -> Self {
+    fn load_from_disk() -> Self {
         let vars = parse_env_file();
         Self {
             ollama_url: get_var(&vars, "OLLAMA_URL", "http://127.0.0.1:11434/api/chat"),
             ollama_model: get_var(&vars, "OLLAMA_MODEL", "qwen3:4b-instruct"),
+            ollama_vision_model: get_var(&vars, "OLLAMA_VISION_MODEL", "qwen2.5vl:3b"),
             hermes_url: get_var(&vars, "HERMES_URL", "http://127.0.0.1:8642/v1/chat/completions"),
             hermes_model: get_var(&vars, "HERMES_MODEL", "hermes-agent"),
             hermes_key: get_var(&vars, "HERMES_KEY", ""),
@@ -165,7 +181,15 @@ impl AppConfig {
             tts_volume: get_var(&vars, "TTS_VOLUME", "70"),
             active_skin: get_var(&vars, "ACTIVE_SKIN", "padrao"),
             ui_theme: get_var(&vars, "UI_THEME", "gothic"),
+            particles_enabled: get_var(&vars, "PARTICLES_ENABLED", "1"),
         }
+    }
+
+    pub fn load() -> Self {
+        let lock = CONFIG_CACHE.get_or_init(|| RwLock::new(Self::load_from_disk()));
+        lock.read()
+            .map(|g| g.clone())
+            .unwrap_or_else(|_| Self::load_from_disk())
     }
 }
 
@@ -185,10 +209,12 @@ pub fn save_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String
         let t = clean_env_val(&cfg.ui_theme);
         if t.is_empty() { "gothic".to_string() } else { t }
     };
+    let particles_clean = if clean_env_val(&cfg.particles_enabled) == "0" { "0" } else { "1" };
     let content = format!(
         "# Configuração local da Aster Companion (NÃO subir para o Git!)\n\
          OLLAMA_URL={}\n\
          OLLAMA_MODEL={}\n\
+         OLLAMA_VISION_MODEL={}\n\
          \n\
          HERMES_URL={}\n\
          HERMES_MODEL={}\n\
@@ -204,11 +230,13 @@ pub fn save_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String
          FISH_VOICE_ID={}\n\
          FISH_MODEL={}\n\
          \n\
-         # Skin ativa e tema de cores da interface\n\
+         # Skin ativa, tema de cores e partículas\n\
          ACTIVE_SKIN={}\n\
-         UI_THEME={}\n",
+         UI_THEME={}\n\
+         PARTICLES_ENABLED={}\n",
         clean_env_val(&cfg.ollama_url),
         clean_env_val(&cfg.ollama_model),
+        clean_env_val(&cfg.ollama_vision_model),
         clean_env_val(&cfg.hermes_url),
         clean_env_val(&cfg.hermes_model),
         clean_env_val(&cfg.hermes_key),
@@ -221,12 +249,22 @@ pub fn save_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String
         clean_env_val(&cfg.fish_model),
         clean_env_val(&cfg.active_skin),
         theme_clean,
+        particles_clean,
     );
     fs::write(&path, content).map_err(|e| format!("Erro salvando .env: {e}"))?;
+    if let Some(lock) = CONFIG_CACHE.get() {
+        if let Ok(mut guard) = lock.write() {
+            *guard = AppConfig::load_from_disk();
+        }
+    }
     if let Some(main_win) = app.get_webview_window("main") {
         let _ = main_win.emit(
             "aster-settings-updated",
-            serde_json::json!({ "tts_volume": vol_clean, "ui_theme": theme_clean }),
+            serde_json::json!({
+                "tts_volume": vol_clean,
+                "ui_theme": theme_clean,
+                "particles_enabled": particles_clean == "1"
+            }),
         );
     }
     Ok(())

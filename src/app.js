@@ -1,6 +1,4 @@
-// ============================================================================
-// Aster Companion — Frontend Completo (Passo 4: UI + Cérebro + Ações + Voz)
-// ============================================================================
+// Aster Companion - frontend principal
 const invoke = window.__TAURI__?.core?.invoke;
 const tauriWindow = window.__TAURI__?.window?.getCurrentWindow?.();
 const tauriEvent = window.__TAURI__?.event;
@@ -75,17 +73,54 @@ function preloadSprites() {
   });
 }
 
+let currentSkinId = 'padrao';
+let nowPlaying = { playing: false, title: '', artist: '', app: '' };
+let lastTrackKey = '';
+let lastMusicCommentAt = 0;
+let activeSkinBlobUrls = [];
+
+function revokeSkinBlobUrls() {
+  for (const url of activeSkinBlobUrls) {
+    try { URL.revokeObjectURL(url); } catch (_) {}
+  }
+  activeSkinBlobUrls = [];
+}
+
+function dataUriToBlobUrl(dataUri) {
+  if (!dataUri || !dataUri.startsWith('data:')) return dataUri;
+  const comma = dataUri.indexOf(',');
+  if (comma === -1) return dataUri;
+  const header = dataUri.slice(5, comma);
+  const mime = header.split(';')[0] || 'image/png';
+  const bin = atob(dataUri.slice(comma + 1));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+  activeSkinBlobUrls.push(url);
+  return url;
+}
+
 async function applySkin(skinId) {
+  revokeSkinBlobUrls();
   Object.assign(SPRITES, DEFAULT_SPRITES);
   if (invoke) {
     try {
-      const overrides = (await invoke('skins_get_overrides', { skinId: skinId || null })) || {};
-      const hasAny = Object.keys(overrides).length > 0;
-      for (const [key, dataUri] of Object.entries(overrides)) {
+      if (typeof skinId === 'string' && skinId.trim()) {
+        currentSkinId = skinId.trim();
+      } else {
+        const cfg = await invoke('get_settings').catch(() => null);
+        currentSkinId = (cfg?.active_skin || 'padrao').trim();
+      }
+      const rawOverrides = (await invoke('skins_get_overrides', { skinId: currentSkinId || null })) || {};
+      const overrides = {};
+      for (const [key, dataUri] of Object.entries(rawOverrides)) {
         if (key in SPRITES && dataUri) {
-          SPRITES[key] = dataUri;
+          const blobUrl = dataUriToBlobUrl(dataUri);
+          overrides[key] = blobUrl;
+          SPRITES[key] = blobUrl;
         }
       }
+      const hasAny = Object.keys(overrides).length > 0;
       // Fallback inteligente dentro da própria skin: com os 6 essenciais nunca volta pro visual padrão
       if (hasAny) {
         const skinBase = overrides.idle || Object.values(overrides)[0];
@@ -132,7 +167,7 @@ Tags disponíveis:
 - [DISCORD_DM: usuario | mensagem] -> envia DM no Discord
 - [MEDIA: playpause], [MEDIA: next], [MEDIA: prev], [MEDIA: mute], [MEDIA: volup], [MEDIA: voldown] -> controla reprodução e volume
 - [REMEMBER: fato curto] -> salva um fato útil e duradouro sobre o Kio na memória persistente (só use quando ele contar uma preferência, apelido de contato ou projeto importante)
-- [DELEGATE: tarefa] -> use APENAS se o Kio pedir programação complexa, leitura de arquivos ou pesquisa profunda na web (delegação para Kaida/Hermes).
+- [DELEGATE: tarefa] -> use APENAS se o Kio pedir programação complexa, leitura de arquivos ou pesquisa profunda na web (delegação para o Hermes).
 
 Exemplos de como responder:
 Kio: "tá muito alto isso aí" -> [MOOD: idle] [MEDIA: mute] Mutado.
@@ -140,17 +175,28 @@ Kio: "bota um linkin park pra tocar" -> [MOOD: smug] [SPOTIFY_PLAY: Linkin Park]
 Kio: "pausa o som" -> [MOOD: idle] [MEDIA: playpause] Pausado.
 Kio: "pesquisa no youtube como configurar docker" -> [MOOD: idle] [OPEN_URL: https://www.youtube.com/results?search_query=como+configurar+docker] Abrindo a busca no YouTube.`;
 
-const KAIDA_DIRECT_REGEX = /(?:pede|pe[çc]a|fala|manda|passa|delega|chama)\s+(?:pra|para)\s+(?:a\s+)?kaida\b(?:\s+(?:pra|para)\s+)?(.*)/i;
+const HERMES_DIRECT_REGEX = /(?:pede|pe[çc]a|fala|manda|passa|delega|chama)\s+(?:pro|para\s+o|pra|para)\s+(?:o\s+)?hermes\b(?:\s+(?:pra|para)\s+)?(.*)/i;
 const HERMES_TRIGGERS = /\b(audita|auditar|pesquisa na web|pesquisar na web|refatora|refatorar|cria um projeto|script complexo)\b/i;
 const DISCORD_WEBHOOK_REGEX = /(?:posta|postar|publica|publicar|manda|mandar|envia|enviar)\s+.*?\b(?:no\s+canal|no\s+servidor|via\s+webhook)\b.*?\bdiscord\b|\bdiscord\b.*?\b(?:no\s+canal|no\s+servidor|via\s+webhook)\b/i;
+const VISION_TRIGGER_REGEX = /^(?:\/ver|\/tela)\b(.*)|(?:\b(?:olha|olhe|v[êe]|veja|analisa|analise|l[êe]|leia|me\s+ajuda\s+com|o\s+que\s+(?:t[áa]|est[áa]|tem|voc[êe]\s+(?:v[êe]|acha\s+d(?:isso|esse|essa))))\b.*\b(?:minha\s+tela|na\s+tela|essa\s+tela|da\s+tela|aqui\s+na\s+tela)\b)/i;
 
 let savedMemories = [];
 let history = [{ role: 'system', content: ASTER_SYSTEM }];
 
 function buildSystemPrompt() {
-  if (!savedMemories.length) return ASTER_SYSTEM;
+  let prompt = ASTER_SYSTEM;
+  if (currentSkinId && currentSkinId !== 'padrao') {
+    prompt += `\n\n[Visual atual: você está vestindo a skin "${currentSkinId}". Se o Kio perguntar qual roupa ou skin você está usando, responda naturalmente no personagem sobre ela.]`;
+  } else {
+    prompt += `\n\n[Visual atual: você está usando seu visual padrão (suéter escuro casual/gótico).]`;
+  }
+  if (nowPlaying.playing && (nowPlaying.title || nowPlaying.artist)) {
+    const faixa = nowPlaying.artist ? `"${nowPlaying.title}" de ${nowPlaying.artist}` : `"${nowPlaying.title}"`;
+    prompt += `\n[Música tocando agora no PC do Kio: ${faixa}. Se ele perguntar o que tá tocando ou comentar sobre a música, use essa informação real.]`;
+  }
+  if (!savedMemories.length) return prompt;
   const list = savedMemories.map((f, i) => `${i + 1}. ${f}`).join('\n');
-  return `${ASTER_SYSTEM}\n\n[Memórias salvas — SEMPRE use estes dados reais ao preencher tags como [SPOTIFY_PLAY: ...], [WPP: ...] ou [DISCORD_DM: ...], inclusive quando o Kio pedir "sua/minha música favorita" ou usar apelidos]:\n${list}`;
+  return `${prompt}\n\n[Memórias salvas — SEMPRE use estes dados reais ao preencher tags como [SPOTIFY_PLAY: ...], [WPP: ...] ou [DISCORD_DM: ...], inclusive quando o Kio pedir "sua/minha música favorita" ou usar apelidos]:\n${list}`;
 }
 
 async function refreshMemories() {
@@ -180,6 +226,60 @@ let perchLeaveTimer = null;
 let spontaneousEnabled = true;
 let chatterTimer = null;
 let ttsVolume = 0.7;
+let currentUiTheme = 'gothic';
+let particlesEnabled = true;
+const ambientLayer = document.getElementById('ambient-particles');
+
+function spawnAmbientParticle() {
+  if (document.hidden || !ambientLayer || !particlesEnabled || wrapper.classList.contains('sleeping')) return;
+  if (ambientLayer.childElementCount >= 7) return;
+
+  const isNatal = /natal/i.test(currentSkinId || '');
+  const isSakura = currentUiTheme === 'sakura';
+  const el = document.createElement('span');
+  el.className = 'ambient-dot';
+
+  const leftPct = 14 + Math.random() * 72;
+  const dx = (Math.random() * 36 - 18).toFixed(0) + 'px';
+  const dur = (5.5 + Math.random() * 3.5).toFixed(2) + 's';
+
+  if (isNatal) {
+    el.textContent = Math.random() < 0.5 ? '❄' : '•';
+    el.style.left = `${leftPct}%`;
+    el.style.top = '180px';
+    el.style.fontSize = `${8 + Math.random() * 6}px`;
+    el.style.color = '#f8fafc';
+    el.style.textShadow = '0 0 6px rgba(255,255,255,0.75)';
+    el.style.setProperty('--p-op', '0.62');
+    el.style.setProperty('--p-dx', dx);
+    el.style.animation = `ambientFall ${dur} ease-in-out forwards`;
+  } else if (isSakura) {
+    el.textContent = '❀';
+    el.style.left = `${leftPct}%`;
+    el.style.top = '180px';
+    el.style.fontSize = `${9 + Math.random() * 5}px`;
+    el.style.color = '#f9a8d4';
+    el.style.textShadow = '0 0 6px rgba(244,114,182,0.55)';
+    el.style.setProperty('--p-op', '0.52');
+    el.style.setProperty('--p-dx', `${(14 + Math.random() * 24).toFixed(0)}px`);
+    el.style.animation = `ambientFall ${dur} ease-in-out forwards`;
+  } else {
+    el.textContent = Math.random() < 0.45 ? '✦' : '•';
+    el.style.left = `${leftPct}%`;
+    el.style.bottom = '70px';
+    el.style.fontSize = `${7 + Math.random() * 5}px`;
+    el.style.color = 'var(--accent-soft)';
+    el.style.textShadow = '0 0 8px rgba(var(--accent-soft-rgb), 0.75)';
+    el.style.setProperty('--p-op', '0.45');
+    el.style.setProperty('--p-dx', dx);
+    el.style.animation = `ambientRise ${dur} ease-out forwards`;
+  }
+
+  ambientLayer.appendChild(el);
+  el.addEventListener('animationend', () => el.remove(), { once: true });
+}
+
+setInterval(spawnAmbientParticle, 1650);
 
 async function refreshTtsVolume() {
   if (!invoke) return;
@@ -189,30 +289,45 @@ async function refreshTtsVolume() {
     if (Number.isFinite(v)) {
       ttsVolume = Math.max(0, Math.min(1, v / 100));
     }
-    if (cfg?.ui_theme && window.applyAsterTheme) {
-      window.applyAsterTheme(cfg.ui_theme);
+    if (cfg?.ui_theme) {
+      currentUiTheme = cfg.ui_theme;
+      window.applyAsterTheme?.(cfg.ui_theme);
     }
+    particlesEnabled = cfg?.particles_enabled !== '0';
+    if (!particlesEnabled && ambientLayer) ambientLayer.innerHTML = '';
   } catch (_) {}
 }
 
-// ============================================================================
-// 1. CLICK-THROUGH INTELIGENTE + MODO TELA LIMPA (AUTO-OCULTAR UI)
-// ============================================================================
+// Click-through e auto-hide da UI
 const HIT_ELEMENTS = [dragHeader, speechBubble, sprite, inputBox];
 let bubbleHideTimer = null;
 let chatHideTimer = null;
 let bubbleHovered = false;
 let chatHovered = false;
 
-function syncHitRects() {
-  if (!invoke) return;
-  const rects = HIT_ELEMENTS
-    .filter((el) => !el.classList.contains('ui-hidden'))
-    .map((el) => el.getBoundingClientRect())
-    .filter((r) => r.width > 0 && r.height > 0)
-    .map((r) => ({ x: r.left, y: r.top, width: r.width, height: r.height }));
+let hitRectsRaf = null;
+let lastHitRectsSig = '';
 
-  invoke('update_hit_rects', { rects }).catch(() => {});
+function syncHitRects() {
+  if (!invoke || hitRectsRaf !== null) return;
+  hitRectsRaf = requestAnimationFrame(() => {
+    hitRectsRaf = null;
+    const rects = HIT_ELEMENTS
+      .filter((el) => !el.classList.contains('ui-hidden'))
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0)
+      .map((r) => ({
+        x: Math.round(r.left),
+        y: Math.round(r.top),
+        width: Math.round(r.width),
+        height: Math.round(r.height),
+      }));
+
+    const sig = rects.map((r) => `${r.x},${r.y},${r.width},${r.height}`).join('|');
+    if (sig === lastHitRectsSig) return;
+    lastHitRectsSig = sig;
+    invoke('update_hit_rects', { rects }).catch(() => {});
+  });
 }
 
 function scheduleBubbleAutoHide(delayMs = 9000) {
@@ -331,9 +446,7 @@ window.addEventListener('resize', syncHitRects);
 sprite.addEventListener('load', syncHitRects);
 setTimeout(syncHitRects, 150);
 
-// ============================================================================
-// 2. ARRASTAR JANELA + ANIMAÇÕES DA ASTER
-// ============================================================================
+// Arrastar janela e animações
 function triggerBounce() {
   wrapper.classList.remove('bounce');
   void wrapper.offsetWidth;
@@ -362,7 +475,7 @@ function resetIdleTimer() {
   }, 45000);
 }
 
-// ---------- Passeio autônomo pela barra de tarefas ----------
+// Passeio pela barra de tarefas
 function stopWalking(restoreIdle = true) {
   if (!isWalking) return;
   isWalking = false;
@@ -766,9 +879,7 @@ window.addEventListener('mousemove', (e) => {
   sprite.style.setProperty('--tilt', `${angle.toFixed(2)}deg`);
 });
 
-// ============================================================================
-// 2.5. HEADPAT / CARINHO NA CABEÇA + PARTÍCULAS ROXAS
-// ============================================================================
+// Headpat e partículas de carinho
 const HEADPAT_LINES = [
   { mood: 'angry', text: 'Ei, vai bagunçar meu cabelo.' },
   { mood: 'smug',  text: 'Tô fingindo que não gostei.' },
@@ -863,19 +974,103 @@ wrapper.addEventListener('mousemove', (e) => {
   }
 });
 
-function setMode(isKaida) {
-  if (isKaida) {
-    statusPill?.classList.add('kaida');
-    modeLabel.innerText = '✦ Kaida';
+function setMode(isHermes) {
+  if (isHermes) {
+    statusPill?.classList.add('hermes');
+    modeLabel.innerText = '✦ Hermes';
   } else {
-    statusPill?.classList.remove('kaida');
+    statusPill?.classList.remove('hermes');
     modeLabel.innerText = 'Aster';
   }
 }
 
-// ============================================================================
-// 3. AÇÕES LOCAIS NO WINDOWS (EXECUTADAS VIA RUST NATIVO)
-// ============================================================================
+// Lembretes, timers e Pomodoro
+let activeReminders = [];
+let nextReminderId = 1;
+
+function playReminderChime() {
+  try {
+    const ctx = ttsAudioCtx || new AudioContext();
+    if (!ttsAudioCtx) ttsAudioCtx = ctx;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const now = ctx.currentTime;
+    const vol = Math.max(0.05, Math.min(0.45, ttsVolume * 0.4));
+    [659.25, 880.0].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+      gain.gain.setValueAtTime(0.001, now + idx * 0.14);
+      gain.gain.exponentialRampToValueAtTime(vol, now + idx * 0.14 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.14 + 0.42);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.14);
+      osc.stop(now + idx * 0.14 + 0.45);
+    });
+  } catch (_) {}
+}
+
+function formatRemainingMs(ms) {
+  const totalSec = Math.max(1, Math.round(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return m > 0 ? `${h}h ${m}min` : `${h}h`;
+  if (m > 0) return s > 0 && m < 3 ? `${m}min ${s}s` : `${m}min`;
+  return `${s}s`;
+}
+
+function scheduleReminder(label, delayMs, { kind = 'reminder', onTrigger = null } = {}) {
+  const id = nextReminderId++;
+  const fireAt = Date.now() + delayMs;
+  const entry = { id, label, kind, fireAt, timerId: null };
+  entry.timerId = setTimeout(async () => {
+    activeReminders = activeReminders.filter((r) => r.id !== id);
+    stopWalking(true);
+    resetIdleTimer();
+    playReminderChime();
+    if (typeof onTrigger === 'function') {
+      await onTrigger();
+    } else {
+      await speakText(`[MOOD: smug] Ei Kio, hora do seu lembrete: ${label}!`, true);
+    }
+  }, delayMs);
+  activeReminders.push(entry);
+  return entry;
+}
+
+function startPomodoroCycle(focusMin = 25, breakMin = 5) {
+  // Cancela pomodoro anterior se houver
+  activeReminders
+    .filter((r) => r.kind === 'pomodoro')
+    .forEach((r) => clearTimeout(r.timerId));
+  activeReminders = activeReminders.filter((r) => r.kind !== 'pomodoro');
+
+  scheduleReminder(`Foco Pomodoro (${focusMin}min)`, focusMin * 60 * 1000, {
+    kind: 'pomodoro',
+    onTrigger: async () => {
+      await speakText(`[MOOD: smug] Pomodoro concluído, Kio! Hora de uma pausa de ${breakMin} minutos.`, true);
+      scheduleReminder(`Pausa Pomodoro (${breakMin}min)`, breakMin * 60 * 1000, {
+        kind: 'pomodoro',
+        onTrigger: async () => {
+          await speakText('[MOOD: idle] Pausa encerrada, Kio. Bora voltar pro foco ou mandar outro pomodoro?', true);
+        },
+      });
+    },
+  });
+}
+
+function parseDurationToMs(numStr, unitStr) {
+  const n = Number(String(numStr).replace(',', '.'));
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  const u = (unitStr || '').toLowerCase();
+  if (u.startsWith('h')) return Math.round(n * 3600 * 1000);
+  if (u.startsWith('s')) return Math.round(n * 1000);
+  return Math.round(n * 60 * 1000);
+}
+
+// Ações locais do Windows (via Rust)
 function runLocalActions(rawText) {
   for (const m of rawText.matchAll(/\[OPEN_APP:\s*(.+?)\]/gi)) {
     invoke('open_app', { name: m[1].trim() }).catch((e) => console.error('[open_app]', e));
@@ -957,6 +1152,80 @@ async function tryDirectLocalCommand(message) {
   if (/^\/comentar$/i.test(trimmed)) {
     setTimeout(() => triggerSpontaneousComment(true), 120);
     return null;
+  }
+
+  // 0.05. Lembretes, Timers & Pomodoro com voz
+  if (/^(?:\/lembretes|\/timers|quais\s+(?:s[ãa]o\s+)?(?:os\s+|meus\s+)?(?:lembretes|timers)|meus\s+(?:lembretes|timers))$/i.test(trimmed)) {
+    if (!activeReminders.length) {
+      return '[MOOD: idle] Você não tem nenhum lembrete ou timer ativo agora.';
+    }
+    const now = Date.now();
+    const list = activeReminders
+      .map((r, i) => `${i + 1}) ${r.label} (em ${formatRemainingMs(r.fireAt - now)})`)
+      .join(' • ');
+    return `[MOOD: smug] Ativos agora: ${list}`;
+  }
+
+  if (/^(?:\/cancelar-?(?:lembretes|timers|pomodoro)|(?:cancela|para|parar|desliga)\s+(?:o\s+|os\s+|todos\s+os\s+)?(?:lembretes?|timers?|pomodoro))$/i.test(trimmed)) {
+    const onlyPomo = /pomodoro/i.test(trimmed);
+    const toCancel = onlyPomo
+      ? activeReminders.filter((r) => r.kind === 'pomodoro')
+      : [...activeReminders];
+    if (!toCancel.length) {
+      return onlyPomo
+        ? '[MOOD: idle] Não tem nenhum pomodoro rodando agora.'
+        : '[MOOD: idle] Não tem nenhum lembrete ativo pra cancelar.';
+    }
+    toCancel.forEach((r) => clearTimeout(r.timerId));
+    activeReminders = onlyPomo ? activeReminders.filter((r) => r.kind !== 'pomodoro') : [];
+    return onlyPomo
+      ? '[MOOD: idle] Pomodoro cancelado.'
+      : `[MOOD: idle] Cancelei ${toCancel.length} lembrete(s).`;
+  }
+
+  const pomoMatch =
+    trimmed.match(/^\/pomodoro(?:\s+(\d+))?(?:\s+(\d+))?$/i) ||
+    trimmed.match(/^(?:inicia|iniciar|come[çc]a|come[çc]ar|ativa|coloca|bota)\s+(?:um\s+|o\s+)?pomodoro(?:\s+de\s+(\d+)\s*(?:min|minutos?)?)?/i);
+  if (pomoMatch) {
+    const focusMin = Math.max(1, Math.min(180, Number(pomoMatch[1] || 25)));
+    const breakMin = Math.max(1, Math.min(60, Number(pomoMatch[2] || 5)));
+    startPomodoroCycle(focusMin, breakMin);
+    return `[MOOD: smug] Pomodoro iniciado: ${focusMin} minutos de foco e ${breakMin} de pausa. Te aviso na hora!`;
+  }
+
+  // Lembrete por tempo relativo: "/lembrete 15m olhar o forno" ou "me lembra em 20 minutos de beber água"
+  const relRemMatch =
+    trimmed.match(/^\/(?:lembrete|timer)\s+(\d+(?:[.,]\d+)?)\s*(s|seg|segundos?|m|min|minutos?|h|hr|horas?)\s*(.*)/i) ||
+    trimmed.match(/^(?:me\s+)?(?:lembra|lembre|avisa|avise|coloca\s+um\s+timer|cria\s+um\s+timer|timer)\s+(?:de\s+|em\s+|daqui\s+(?:a\s+)?)(\d+(?:[.,]\d+)?)\s*(s|seg|segundos?|m|min|minutos?|h|hr|horas?)(?:\s+(?:de|para|pra|sobre|:)\s+|\s+)?(.*)/i);
+  if (relRemMatch) {
+    const ms = parseDurationToMs(relRemMatch[1], relRemMatch[2]);
+    const label = (relRemMatch[3] || '').trim().replace(/[?.!]+$/, '') || 'seu timer';
+    if (ms >= 1000 && ms <= 24 * 3600 * 1000) {
+      scheduleReminder(label, ms);
+      return `[MOOD: smug] Fechado! Te aviso em ${formatRemainingMs(ms)}: "${label}".`;
+    }
+  }
+
+  // Lembrete por horário fixo: "me lembra às 22:30 de dormir" ou "me avisa as 18h da reunião"
+  const clockRemMatch = trimmed.match(
+    /^(?:me\s+)?(?:lembra|lembre|avisa|avise)\s+(?:[àa]s|as)\s+(\d{1,2})(?:(?::|h)(\d{2})?|h)(?:\s+(?:de|para|pra|da|do|sobre)\s+|\s+)?(.*)/i
+  );
+  if (clockRemMatch) {
+    const hh = Number(clockRemMatch[1]);
+    const mm = Number(clockRemMatch[2] || 0);
+    if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
+      const now = new Date();
+      const target = new Date(now);
+      target.setHours(hh, mm, 0, 0);
+      if (target.getTime() <= now.getTime()) {
+        target.setDate(target.getDate() + 1);
+      }
+      const ms = target.getTime() - now.getTime();
+      const label = (clockRemMatch[3] || '').trim().replace(/[?.!]+$/, '') || `horário das ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+      scheduleReminder(label, ms);
+      const hhmm = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+      return `[MOOD: smug] Marcado para às ${hhmm} (em ${formatRemainingMs(ms)}): "${label}".`;
+    }
   }
   if (/^(?:para\s+de\s+falar\s+sozinha|modo\s+silencioso|fica\s+calada)$/i.test(trimmed)) {
     spontaneousEnabled = false;
@@ -1112,9 +1381,7 @@ async function tryDirectLocalCommand(message) {
   return null;
 }
 
-// ============================================================================
-// 4. MÓDULO DE VOZ (RUST WORKERS + VAD ADAPTATIVO + WAKE-WORD + LIP-SYNC REAL)
-// ============================================================================
+// Voz: microfone (Whisper), TTS (Fish Audio) e lip-sync
 const DEBUG_VOICE = false;
 const SAMPLE_RATE = 16000;
 const VOICE_FRAME = 2048;
@@ -1368,14 +1635,12 @@ async function speakVoice(text) {
   }
 }
 
-// ============================================================================
-// 4.5. FALAS ESPONTÂNEAS COM VOZ (CONTEXTO DO PC + HORÁRIO + FRASES SOLTAS)
-// ============================================================================
+// Comentários espontâneos
 const IDLE_QUIPS_GENERAL = [
   { mood: 'smug',  text: 'Bebe uma água aí, Kio, antes que você vire uma uva passa.' },
   { mood: 'idle',  text: 'Tô só de olho no que você tá aprontando nessa tela.' },
   { mood: 'smug',  text: 'Postura, Kio. Sua coluna agradece.' },
-  { mood: 'idle',  text: 'Se precisar que eu abra algo ou chame a Kaida, é só falar.' },
+  { mood: 'idle',  text: 'Se precisar que eu abra algo ou delegue pro Hermes, é só falar.' },
   { mood: 'music', text: 'Um sonzinho no Spotify agora caía bem, hein.' },
 ];
 
@@ -1479,7 +1744,7 @@ function scheduleNextChatter(customDelayMs) {
   }, delay);
 }
 
-// ---------- Palavra de ativação ("Aster") — removido 'estar' pra evitar falso positivo ----------
+// Palavras de ativação ("Aster") - sem 'estar' para evitar falso positivo
 const WAKE_WORDS = new Set([
   'aster', 'astor', 'asther', 'esther', 'ester', 'haster', 'hastor', 'asta', 'aste', 'astra', 'astre',
 ]);
@@ -1790,9 +2055,7 @@ micBtn.addEventListener('click', async () => {
   }
 });
 
-// ============================================================================
-// 5. FALA + CÉREBRO HÍBRIDO (ATALHOS DIRETOS + OLLAMA + KAIDA/HERMES)
-// ============================================================================
+// Fala e roteamento (comandos locais, Ollama e Hermes)
 async function speakText(rawText, forceVoice = false) {
   resetIdleTimer();
   triggerBounce();
@@ -1864,7 +2127,7 @@ async function speakText(rawText, forceVoice = false) {
 async function askHermes(task) {
   setMode(true);
   sprite.src = SPRITES.think;
-  showBubble('✦ Escalando para Kaida (Hermes)...', 0);
+  showBubble('✦ Escalando para Hermes...', 0);
   return await invoke('ask_hermes', { task });
 }
 
@@ -1906,18 +2169,18 @@ async function askAster(message) {
       return;
     }
 
-    // 1. Delegação explícita para Kaida (/kaida ... ou "pede pra Kaida ...")
-    if (message.toLowerCase().startsWith('/kaida ')) {
-      const task = message.slice(7).trim();
+    // 1. Delegação explícita para Hermes (/hermes ... ou "pede pro Hermes ...")
+    if (message.toLowerCase().startsWith('/hermes ')) {
+      const task = message.slice(8).trim();
       const reply = await askHermes(task);
       history.push({ role: 'user', content: message }, { role: 'assistant', content: reply });
       await speakText(reply);
       return;
     }
 
-    const kaidaDirect = message.match(KAIDA_DIRECT_REGEX);
-    if (kaidaDirect) {
-      const task = (kaidaDirect[1] || message).trim();
+    const hermesDirect = message.match(HERMES_DIRECT_REGEX);
+    if (hermesDirect) {
+      const task = (hermesDirect[1] || message).trim();
       const reply = await askHermes(task);
       history.push({ role: 'user', content: message }, { role: 'assistant', content: reply });
       await speakText(reply);
@@ -1950,11 +2213,28 @@ async function askAster(message) {
       return;
     }
 
-    // 4. Gatilhos pesados vão direto para Kaida/Hermes
+    // 4. Gatilhos pesados vão direto para Hermes
     if (HERMES_TRIGGERS.test(message)) {
       const reply = await askHermes(message);
       history.push({ role: 'user', content: message }, { role: 'assistant', content: reply });
       await speakText(reply);
+      return;
+    }
+
+    // 4.5. Visão de Tela Real (/ver, /tela ou "olha minha tela...")
+    const visionMatch = message.match(VISION_TRIGGER_REGEX);
+    if (visionMatch) {
+      setMode(false);
+      setMood('think');
+      showBubble('Olhando sua tela...', 0);
+      const userQuestion = (visionMatch[1]?.trim() || message).trim() || 'Descreva brevemente o que está na minha tela e comente.';
+      const visionSystem = 'Você é Aster, assistente de desktop do Kio no Windows 11. Personalidade direta, humor seco, informal em PT-BR e respostas curtas (1 a 3 frases). Comece sempre com [MOOD: idle], [MOOD: smug] ou [MOOD: angry]. Você está vendo um print real da tela do Kio agora.';
+      const visionReply = await invoke('ask_ollama_vision', {
+        prompt: userQuestion,
+        systemPrompt: visionSystem,
+      });
+      history.push({ role: 'user', content: `[Print da tela] ${userQuestion}` }, { role: 'assistant', content: visionReply });
+      await speakText(visionReply || '[MOOD: idle] Vi sua tela, mas não entendi bem o que você quer.');
       return;
     }
 
@@ -1981,17 +2261,84 @@ async function askAster(message) {
       console.warn('[docs_search]', e);
     }
 
-    // 6. Cérebro local (Ollama)
+    // 6. Cérebro local (Ollama com streaming em tempo real)
     setMode(false);
     history[0] = { role: 'system', content: buildSystemPrompt() };
     history.push({ role: 'user', content: promptToSend });
     if (history.length > 9) history = [history[0], ...history.slice(-8)];
 
-    const reply = await invoke('chat_ollama', {
-      messages: history,
-      temperature: 0.7,
-      numCtx: 2048,
-    });
+    let streamRaw = '';
+    let streamedVisible = false;
+    let streamMoodApplied = false;
+    let streamLastTalkToggle = 0;
+    let streamTalkOpen = false;
+    let unlistenChunk = null;
+
+    const sanitizeStreamingText = (raw) => {
+      let s = raw.replace(/<think>[\s\S]*?<\/think>/gi, '');
+      const openThink = s.indexOf('<think>');
+      if (openThink !== -1) s = s.slice(0, openThink);
+      // Remove tags completas [MOOD: ...], [OPEN_APP: ...], etc.
+      s = s.replace(/\[(MOOD|OPEN_APP|OPEN_URL|SPOTIFY_PLAY|WPP|DISCORD_DM|MEDIA|REMEMBER|DELEGATE):[^\]]+\]/gi, '');
+      // Esconde qualquer tag parcial ainda sendo recebida no final (ex: "[MOOD: sm")
+      const lastOpen = s.lastIndexOf('[');
+      if (lastOpen !== -1 && s.indexOf(']', lastOpen) === -1) {
+        s = s.slice(0, lastOpen);
+      }
+      return s.trimStart();
+    };
+
+    if (tauriEvent?.listen) {
+      unlistenChunk = await tauriEvent.listen('ollama-chunk', (ev) => {
+        const piece = typeof ev?.payload === 'string' ? ev.payload : '';
+        if (!piece) return;
+        streamRaw += piece;
+
+        if (!streamMoodApplied) {
+          const mm = streamRaw.match(/\[MOOD:\s*(smug|angry|idle|sleepy|think|music|listen|drag|sit|blink)\]/i);
+          if (mm) {
+            streamMoodApplied = true;
+            setMood(mm[1].toLowerCase());
+          }
+        }
+        if (/\[DELEGATE:/i.test(streamRaw)) return;
+
+        const visible = sanitizeStreamingText(streamRaw);
+        if (visible) {
+          if (!streamedVisible) {
+            streamedVisible = true;
+            triggerBounce();
+            showBubble('', 0);
+          }
+          speechText.textContent = visible;
+          speechBubble.scrollTop = speechBubble.scrollHeight;
+
+          const isSeated = currentMood === 'sit' || perchedHwnd !== null;
+          if (!ttsPlaying && !isSeated && !isWalking) {
+            const now = performance.now();
+            if (now - streamLastTalkToggle >= 240) {
+              streamTalkOpen = !streamTalkOpen;
+              streamLastTalkToggle = now;
+              const talkSprite = currentMood === 'idle' ? SPRITES.talk_calm : SPRITES.talk;
+              sprite.src = streamTalkOpen ? talkSprite : (SPRITES[currentMood] || SPRITES.idle);
+            }
+          }
+        }
+      });
+    }
+
+    let reply = '';
+    try {
+      reply = await invoke('chat_ollama_stream', {
+        messages: history,
+        temperature: 0.7,
+        numCtx: 2048,
+      });
+    } finally {
+      if (typeof unlistenChunk === 'function') {
+        try { unlistenChunk(); } catch (_) {}
+      }
+    }
 
     const delegateMatch = reply.match(/\[DELEGATE:\s*(.+?)\]/is);
     if (delegateMatch) {
@@ -2002,7 +2349,29 @@ async function askAster(message) {
     }
 
     history.push({ role: 'assistant', content: reply });
-    await speakText(reply || '...');
+    if (streamedVisible) {
+      // Texto já apareceu ao vivo no balão -> executa ações, aplica mood final e dispara a voz!
+      resetIdleTimer();
+      runLocalActions(reply);
+      let mood = currentMood || 'idle';
+      const moodMatch = reply.match(/\[MOOD:\s*(smug|angry|idle|sleepy|think|music|listen|drag|sit|blink)\]/i);
+      if (moodMatch) mood = moodMatch[1].toLowerCase();
+      if (/\[SPOTIFY_PLAY:/i.test(reply)) mood = 'music';
+      setMood(mood);
+
+      const cleanFinal = reply
+        .replace(/\[(MOOD|OPEN_APP|OPEN_URL|SPOTIFY_PLAY|WPP|DISCORD_DM|MEDIA|REMEMBER|DELEGATE):[^\]]+\]/gi, '')
+        .trim();
+      speechText.textContent = cleanFinal || '...';
+      speechBubble.scrollTop = speechBubble.scrollHeight;
+      if (cleanFinal) {
+        speakVoice(cleanFinal);
+      } else {
+        scheduleBubbleAutoHide(7000);
+      }
+    } else {
+      await speakText(reply || '...');
+    }
   } catch (err) {
     setMood('angry');
     showBubble(`Erro: ${err?.message || err}`, 10000);
@@ -2012,9 +2381,7 @@ async function askAster(message) {
   }
 }
 
-// ============================================================================
-// 6. EVENTOS DA INTERFACE
-// ============================================================================
+// Eventos de input e inicialização
 sendBtn.addEventListener('click', () => {
   const text = userInput.value.trim();
   if (!text) return;
@@ -2040,7 +2407,7 @@ cfgBtn?.addEventListener('click', () => {
 const CHAT_PLACEHOLDERS = [
   'Falar com Aster...',
   'Toca algo no Spotify...',
-  'Peça pra Kaida...',
+  'Peça pro Hermes...',
   'Lembra que...',
   '/walk • /sit • /comentar',
 ];
@@ -2052,10 +2419,83 @@ setInterval(() => {
   }
 }, 5000);
 
+async function pollNowPlaying() {
+  if (!invoke || document.hidden) return;
+  try {
+    const info = (await invoke('get_now_playing')) || { playing: false, title: '', artist: '', app: '' };
+    const wasPlaying = nowPlaying.playing;
+    nowPlaying = info;
+
+    const busy =
+      isSpeaking ||
+      isThinking ||
+      ttsPlaying ||
+      ttsPending ||
+      isDragging ||
+      isWalking ||
+      isListeningVoice ||
+      perchedHwnd !== null ||
+      wrapper.classList.contains('sleeping');
+
+    if (info.playing) {
+      // Troca automaticamente pro sprite de fone quando está ociosa em idle
+      if (!busy && currentMood === 'idle') {
+        setMood('music');
+      }
+
+      // Detecta troca de faixa para comentar ocasionalmente (cooldown de 8 min)
+      const trackKey = `${info.title}||${info.artist}`.toLowerCase();
+      if (trackKey !== '||' && trackKey !== lastTrackKey) {
+        const isFirstCheck = lastTrackKey === '';
+        lastTrackKey = trackKey;
+        const now = Date.now();
+        if (
+          !isFirstCheck &&
+          spontaneousEnabled &&
+          !busy &&
+          now - lastMusicCommentAt > 8 * 60 * 1000 &&
+          Math.random() < 0.28
+        ) {
+          let isFullscreen = false;
+          try {
+            const ctx = await invoke('get_active_window_context');
+            isFullscreen = Boolean(ctx?.is_fullscreen);
+          } catch (_) {}
+          if (!isFullscreen) {
+            lastMusicCommentAt = now;
+            const faixa = info.artist ? `"${info.title}" de ${info.artist}` : `"${info.title}"`;
+            try {
+              const reply = await invoke('chat_ollama', {
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'Você é Aster, assistente de desktop do Kio. Personalidade seca, bem-humorada e informal em PT-BR. Comece com [MOOD: music] seguido de 1 frase bem curta comentando a música que começou a tocar.',
+                  },
+                  { role: 'user', content: `O Kio acabou de colocar pra tocar: ${faixa}. Faça um comentário espontâneo bem curto.` },
+                ],
+                temperature: 0.85,
+                numCtx: 1024,
+              });
+              if (reply && reply.trim()) {
+                await speakText(reply, true);
+              }
+            } catch (_) {}
+          }
+        }
+      }
+    } else if (wasPlaying && currentMood === 'music' && !busy) {
+      // Pausou a música -> tira o fone e volta pro idle
+      setMood('idle');
+    }
+  } catch (_) {}
+}
+
 setMode(false);
 refreshMemories();
 refreshTtsVolume();
 applySkin();
+pollNowPlaying();
+setInterval(pollNowPlaying, 4000);
 tauriEvent?.listen?.('aster-skin-changed', (ev) => {
   applySkin(typeof ev?.payload === 'string' ? ev.payload : null);
 });
@@ -2070,7 +2510,12 @@ tauriEvent?.listen?.('aster-settings-updated', (ev) => {
       if (currentAudioPlayer) currentAudioPlayer.volume = ttsVolume;
     }
     if (payload.ui_theme && window.applyAsterTheme) {
+      currentUiTheme = payload.ui_theme;
       window.applyAsterTheme(payload.ui_theme);
+    }
+    if (typeof payload.particles_enabled === 'boolean') {
+      particlesEnabled = payload.particles_enabled;
+      if (!particlesEnabled && ambientLayer) ambientLayer.innerHTML = '';
     }
   } else {
     refreshTtsVolume();

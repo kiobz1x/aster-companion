@@ -2,7 +2,7 @@
 window.ASTER_THEMES = {
   gothic: {
     name: 'Glass Gothic',
-    desc: 'Roxo profundo e lavanda — visual clássico da Aster',
+    desc: 'Roxo profundo e lavanda — elegante e sombrio',
     accent: '#8b5cf6',
     accentBright: '#a78bfa',
     accentSoft: '#c4b5fd',
@@ -21,7 +21,7 @@ window.ASTER_THEMES = {
   },
   kinkou: {
     name: 'Kinkou Emerald',
-    desc: 'Verde jade e folha — ideal para a skin Akali',
+    desc: 'Verde jade e esmeralda — contraste vibrante',
     accent: '#10b981',
     accentBright: '#34d399',
     accentSoft: '#6ee7b7',
@@ -40,7 +40,7 @@ window.ASTER_THEMES = {
   },
   crimson: {
     name: 'Crimson Natal',
-    desc: 'Vermelho vinho e brilho festivo — ideal para a skin Natalina',
+    desc: 'Vermelho vinho e rubi — quente e marcante',
     accent: '#e11d48',
     accentBright: '#fb7185',
     accentSoft: '#fda4af',
@@ -59,7 +59,7 @@ window.ASTER_THEMES = {
   },
   cyber: {
     name: 'Cyber Ice',
-    desc: 'Ciano elétrico e azul noturno — estilo Kaida / sci-fi',
+    desc: 'Ciano elétrico e azul noturno — visual futurista',
     accent: '#06b6d4',
     accentBright: '#22d3ee',
     accentSoft: '#67e8f9',
@@ -78,7 +78,7 @@ window.ASTER_THEMES = {
   },
   sakura: {
     name: 'Sakura Nocturne',
-    desc: 'Rosa suave e ameixa escura — anime dark',
+    desc: 'Rosa suave e ameixa escura — leve e estilizado',
     accent: '#ec4899',
     accentBright: '#f472b6',
     accentSoft: '#f9a8d4',
