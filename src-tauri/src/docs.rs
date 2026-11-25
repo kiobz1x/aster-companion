@@ -66,13 +66,33 @@ fn normalize_text(s: &str) -> String {
         .replace(['ú', 'ù', 'û'], "u")
 }
 
+fn stem_pt(word: &str) -> String {
+    let suffixes = [
+        "amentos", "imentos", "amento", "imento", "acoes", "icoes", "acao", "icao",
+        "ando", "endo", "indo", "mente", "idades", "idade", "istas", "ista",
+        "ores", "oras", "oes", "ais", "eis", "ois", "es", "s",
+    ];
+    for suf in suffixes {
+        if word.len() > suf.len() + 3 && word.ends_with(suf) {
+            return word[..word.len() - suf.len()].to_string();
+        }
+    }
+    word.to_string()
+}
+
 fn extract_keywords(text: &str) -> Vec<String> {
     let norm = normalize_text(text);
     let mut seen = HashSet::new();
     let mut out = Vec::new();
     for tok in norm.split(|c: char| !c.is_alphanumeric()) {
-        if tok.len() >= 3 && !STOPWORDS.contains(&tok) && seen.insert(tok.to_string()) {
-            out.push(tok.to_string());
+        if tok.len() >= 3 && !STOPWORDS.contains(&tok) {
+            if seen.insert(tok.to_string()) {
+                out.push(tok.to_string());
+            }
+            let st = stem_pt(tok);
+            if st.len() >= 4 && st != tok && seen.insert(st.clone()) {
+                out.push(st);
+            }
         }
     }
     out

@@ -9,10 +9,18 @@ static CONFIG_CACHE: OnceLock<RwLock<AppConfig>> = OnceLock::new();
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
+    #[serde(default = "default_ai_provider")]
+    pub ai_provider: String,
     pub ollama_url: String,
     pub ollama_model: String,
     #[serde(default = "default_vision_model")]
     pub ollama_vision_model: String,
+    #[serde(default = "default_cloud_url")]
+    pub cloud_url: String,
+    #[serde(default = "default_cloud_model")]
+    pub cloud_model: String,
+    #[serde(default)]
+    pub cloud_api_key: String,
     pub hermes_url: String,
     pub hermes_model: String,
     pub hermes_key: String,
@@ -30,6 +38,32 @@ pub struct AppConfig {
     pub ui_theme: String,
     #[serde(default = "default_particles_enabled")]
     pub particles_enabled: String,
+    #[serde(default = "default_sprite_scale")]
+    pub sprite_scale: String,
+    #[serde(default = "default_lol_enabled")]
+    pub lol_enabled: String,
+    #[serde(default)]
+    pub user_name: String,
+}
+
+fn default_ai_provider() -> String {
+    "ollama".to_string()
+}
+
+fn default_cloud_url() -> String {
+    "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions".to_string()
+}
+
+fn default_cloud_model() -> String {
+    "gemini-2.5-flash".to_string()
+}
+
+fn default_sprite_scale() -> String {
+    "100".to_string()
+}
+
+fn default_lol_enabled() -> String {
+    "1".to_string()
 }
 
 fn default_particles_enabled() -> String {
@@ -166,9 +200,17 @@ impl AppConfig {
     fn load_from_disk() -> Self {
         let vars = parse_env_file();
         Self {
+            ai_provider: get_var(&vars, "AI_PROVIDER", "ollama"),
             ollama_url: get_var(&vars, "OLLAMA_URL", "http://127.0.0.1:11434/api/chat"),
             ollama_model: get_var(&vars, "OLLAMA_MODEL", "qwen3:4b-instruct"),
             ollama_vision_model: get_var(&vars, "OLLAMA_VISION_MODEL", "qwen2.5vl:3b"),
+            cloud_url: get_var(
+                &vars,
+                "CLOUD_URL",
+                "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            ),
+            cloud_model: get_var(&vars, "CLOUD_MODEL", "gemini-2.5-flash"),
+            cloud_api_key: get_var(&vars, "CLOUD_API_KEY", ""),
             hermes_url: get_var(&vars, "HERMES_URL", "http://127.0.0.1:8642/v1/chat/completions"),
             hermes_model: get_var(&vars, "HERMES_MODEL", "hermes-agent"),
             hermes_key: get_var(&vars, "HERMES_KEY", ""),
@@ -182,6 +224,9 @@ impl AppConfig {
             active_skin: get_var(&vars, "ACTIVE_SKIN", "padrao"),
             ui_theme: get_var(&vars, "UI_THEME", "gothic"),
             particles_enabled: get_var(&vars, "PARTICLES_ENABLED", "1"),
+            sprite_scale: get_var(&vars, "SPRITE_SCALE", "100"),
+            lol_enabled: get_var(&vars, "LOL_ENABLED", "1"),
+            user_name: get_var(&vars, "USER_NAME", ""),
         }
     }
 
@@ -210,11 +255,27 @@ pub fn save_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String
         if t.is_empty() { "gothic".to_string() } else { t }
     };
     let particles_clean = if clean_env_val(&cfg.particles_enabled) == "0" { "0" } else { "1" };
+    let lol_clean = if clean_env_val(&cfg.lol_enabled) == "0" { "0" } else { "1" };
+    let scale_clean = clean_env_val(&cfg.sprite_scale)
+        .parse::<u32>()
+        .unwrap_or(100)
+        .clamp(75, 130);
+    let provider_clean = if clean_env_val(&cfg.ai_provider).eq_ignore_ascii_case("cloud") {
+        "cloud"
+    } else {
+        "ollama"
+    };
     let content = format!(
         "# Configuração local da Aster Companion (NÃO subir para o Git!)\n\
+         AI_PROVIDER={}\n\
          OLLAMA_URL={}\n\
          OLLAMA_MODEL={}\n\
          OLLAMA_VISION_MODEL={}\n\
+         \n\
+         # API na Nuvem (OpenAI-compatible: Gemini, Groq, OpenRouter, OpenAI)\n\
+         CLOUD_URL={}\n\
+         CLOUD_MODEL={}\n\
+         CLOUD_API_KEY={}\n\
          \n\
          HERMES_URL={}\n\
          HERMES_MODEL={}\n\
@@ -230,13 +291,20 @@ pub fn save_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String
          FISH_VOICE_ID={}\n\
          FISH_MODEL={}\n\
          \n\
-         # Skin ativa, tema de cores e partículas\n\
+         # Aparência, perfil, partículas e jogos\n\
+         USER_NAME={}\n\
          ACTIVE_SKIN={}\n\
          UI_THEME={}\n\
-         PARTICLES_ENABLED={}\n",
+         PARTICLES_ENABLED={}\n\
+         SPRITE_SCALE={}\n\
+         LOL_ENABLED={}\n",
+        provider_clean,
         clean_env_val(&cfg.ollama_url),
         clean_env_val(&cfg.ollama_model),
         clean_env_val(&cfg.ollama_vision_model),
+        clean_env_val(&cfg.cloud_url),
+        clean_env_val(&cfg.cloud_model),
+        clean_env_val(&cfg.cloud_api_key),
         clean_env_val(&cfg.hermes_url),
         clean_env_val(&cfg.hermes_model),
         clean_env_val(&cfg.hermes_key),
@@ -247,9 +315,12 @@ pub fn save_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String
         clean_env_val(&cfg.fish_api_key),
         clean_env_val(&cfg.fish_voice_id),
         clean_env_val(&cfg.fish_model),
+        clean_env_val(&cfg.user_name),
         clean_env_val(&cfg.active_skin),
         theme_clean,
         particles_clean,
+        scale_clean,
+        lol_clean,
     );
     fs::write(&path, content).map_err(|e| format!("Erro salvando .env: {e}"))?;
     if let Some(lock) = CONFIG_CACHE.get() {
@@ -263,7 +334,10 @@ pub fn save_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String
             serde_json::json!({
                 "tts_volume": vol_clean,
                 "ui_theme": theme_clean,
-                "particles_enabled": particles_clean == "1"
+                "particles_enabled": particles_clean == "1",
+                "sprite_scale": scale_clean,
+                "lol_enabled": lol_clean == "1",
+                "user_name": clean_env_val(&cfg.user_name)
             }),
         );
     }

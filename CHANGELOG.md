@@ -2,6 +2,30 @@
 
 Todas as mudanças relevantes do projeto são documentadas neste arquivo.
 
+## [1.3.0] - 2026-11-24
+
+### Novos Recursos
+- **Motor de IA híbrido (Ollama local ou API na Nuvem):** suporte a provedores OpenAI-compatible com presets prontos para **Google Gemini**, **Groq**, **OpenRouter** e **OpenAI** (com streaming SSE, visão de tela na nuvem, desativação de *thinking* no Gemini 2.5 para respostas rápidas e fallback automático para o Ollama).
+- **Botão "Testar IA":** valida a conexão com a IA selecionada (Nuvem ou Ollama) direto na aba **Cérebro (IA)**, exibindo o modelo e a latência em `ms`.
+- **Nome configurável (`USER_NAME`):** campo **"Como a Aster deve te chamar"** em **Memória**, aplicado dinamicamente ao prompt, saudações, lembretes, reações de jogos e teste de voz.
+- **Modo Jogo ao vivo (`games.rs`):** integração nativa com a API local do **League of Legends** (First Blood, Multikills, Dragão, Barão, Vitória/Derrota) e detecção de jogos populares (Valorant, CS2, Minecraft, Elden Ring, GTA V, Fortnite, entre outros).
+- **Painel visual de Pomodoro & Timers:** iniciar ciclos 25/5 ou 50/10, criar lembretes com voz e acompanhar contagens regressivas ao vivo em **Integrações → Pomodoro & Timers**.
+- **Controle de tamanho da Aster na tela:** slider de escala (`75%` a `130%`) em tempo real em **Visual → Cores & Efeitos**.
+- **Animação rítmica no modo música (`musicGroove`):** balanço suave enquanto a Aster está com o sprite de fone (`music`).
+- **Suporte a sprites animados (`.webp` e `.gif`)** e miniaturas reais nos cards de skin.
+- **Guia completo de comandos (`COMANDOS.md`):** referência de todos os comandos slash, frases naturais, atalhos e interações.
+
+### Voz, Contexto & Interface
+- **Voz mais rápida durante streaming:** síntese Fish Audio disparada frase por frase em paralelo enquanto o texto ainda está sendo gerado (`normalize: false`, `chunk_length: 150`).
+- **Contexto e RAG aprimorados:** janela de contexto expandida (`num_ctx: 4096`, histórico de 18 mensagens) e stemming em PT-BR para busca local em `docs/`.
+- **Redesenho das Configurações:** janela redimensionável (`760×600`) reorganizada em 5 abas (**Cérebro (IA)**, **Voz**, **Visual**, **Integrações** e **Memória**), bolinhas de status inteligentes e indicador de alterações não salvas.
+
+### Otimizações & Correções
+- **Sprites otimizados para `720px` (2× Retina):** redução de ~67% no tamanho dos PNGs sem perda visual na tela, e padrão do importador `processar_skin.py` atualizado para `720px`.
+- **Importador de skins (Beta):** defringe aprimorado na borda do `rembg`, compensação de contraste/saturação para frames extraídos de `.mp4` e correção de race condition nos `Blob` URLs durante trocas rápidas de skin.
+
+---
+
 ## [1.2.0] - 2026-11-23
 
 ### Novos Recursos

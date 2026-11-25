@@ -1,14 +1,14 @@
 """
 Importador/Processador de Skins da Aster Companion (Experimental).
 Usa rembg (modelo isnet-anime) para remover fundo branco/opaco de sprites 2D anime,
-aplica contorno preto suave opcional, alinha em 1440px e extrai ciclo de walk de MP4.
+aplica contorno preto suave opcional, alinha em 720px e extrai ciclo de walk de MP4.
 """
 import argparse
 import os
 import sys
 from collections import deque
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageEnhance, ImageFilter
 
 NAME_MAP = {
     "idle": "aster_idle.png",
@@ -66,9 +66,22 @@ def remove_bg_anime(im: Image.Image) -> Image.Image:
         return rgba
     session = get_anime_session()
     out = remove(rgba, session=session, post_process_mask=True)
-    # Limpa restos quase invisíveis de alpha (<18) para não criar sujeira no contorno
-    arr = np.array(out.convert("RGBA"))
-    arr[arr[:, :, 3] < 18, 3] = 0
+    arr = np.array(out.convert("RGBA"), dtype=np.uint8)
+    alpha = arr[:, :, 3]
+    # Limpa resquícios quase transparentes
+    arr[alpha < 35, 3] = 0
+    # Defringe: escurece pixels semitransparentes claros na borda para evitar halo cinza/branco dentro do contorno
+    semi = (alpha >= 35) & (alpha < 175)
+    if np.any(semi):
+        r = arr[:, :, 0].astype(np.int16)
+        g = arr[:, :, 1].astype(np.int16)
+        b = arr[:, :, 2].astype(np.int16)
+        cmin = np.minimum(np.minimum(r, g), b)
+        bright_semi = semi & (cmin >= 150)
+        if np.any(bright_semi):
+            arr[bright_semi, 0] = (arr[bright_semi, 0].astype(np.float32) * 0.25).astype(np.uint8)
+            arr[bright_semi, 1] = (arr[bright_semi, 1].astype(np.float32) * 0.25).astype(np.uint8)
+            arr[bright_semi, 2] = (arr[bright_semi, 2].astype(np.float32) * 0.25).astype(np.uint8)
     return Image.fromarray(arr, "RGBA")
 
 
@@ -77,11 +90,9 @@ def add_black_outline(im: Image.Image, thickness: int = 2) -> Image.Image:
         return im
     rgba = im.convert("RGBA")
     alpha = rgba.split()[3]
-    # Dilata a máscara alpha com MaxFilter (suave e uniforme)
     ksize = max(3, thickness * 2 + 1)
     dilated = alpha.filter(ImageFilter.MaxFilter(ksize))
-    # Suaviza levemente a borda externa do contorno
-    dilated = dilated.filter(ImageFilter.GaussianBlur(radius=0.6))
+    dilated = dilated.filter(ImageFilter.GaussianBlur(radius=0.55))
 
     outline_layer = Image.new("RGBA", rgba.size, (14, 12, 18, 0))
     outline_layer.putalpha(dilated)
@@ -89,7 +100,7 @@ def add_black_outline(im: Image.Image, thickness: int = 2) -> Image.Image:
     return combined
 
 
-def remove_blue_flood(im: Image.Image) -> Image.Image:
+def remove_chroma_flood(im: Image.Image) -> Image.Image:
     rgba = im.convert("RGBA")
     arr = np.array(rgba, dtype=np.uint8)
     h, w, _ = arr.shape
@@ -103,9 +114,9 @@ def remove_blue_flood(im: Image.Image) -> Image.Image:
     ], dtype=np.float32)
     bg_rgb = np.median(corners, axis=0)
 
-    # Se não for fundo azul/verde claro, usa isnet-anime!
-    is_chroma_blue = bg_rgb[2] > bg_rgb[0] + 60 and bg_rgb[2] > 140
-    if not is_chroma_blue:
+    is_chroma_blue = bg_rgb[2] > bg_rgb[0] + 60 and bg_rgb[2] > 140 and bg_rgb[2] > bg_rgb[1]
+    is_chroma_green = bg_rgb[1] > bg_rgb[0] + 60 and bg_rgb[1] > bg_rgb[2] + 50 and bg_rgb[1] > 140
+    if not is_chroma_blue and not is_chroma_green:
         return remove_bg_anime(im)
 
     dist = np.sqrt((r - bg_rgb[0]) ** 2 + (g - bg_rgb[1]) ** 2 + (b - bg_rgb[2]) ** 2)
@@ -140,14 +151,19 @@ def remove_blue_flood(im: Image.Image) -> Image.Image:
 
     pad = np.pad(bg_mask, 1, mode="constant", constant_values=True)
     edge1 = (pad[:-2, 1:-1] | pad[2:, 1:-1] | pad[1:-1, :-2] | pad[1:-1, 2:]) & (~bg_mask)
-    blue_edge = edge1 & (b > np.maximum(r, g) + 25) & (dist < 130.0)
-    out[blue_edge, 3] = np.clip((dist[blue_edge] - 72.0) / 58.0 * 255.0, 0, 255).astype(np.uint8)
-    out[blue_edge, 2] = np.minimum(out[blue_edge, 2], np.maximum(out[blue_edge, 0], out[blue_edge, 1]))
+    if is_chroma_blue:
+        chroma_edge = edge1 & (b > np.maximum(r, g) + 25) & (dist < 130.0)
+        out[chroma_edge, 3] = np.clip((dist[chroma_edge] - 72.0) / 58.0 * 255.0, 0, 255).astype(np.uint8)
+        out[chroma_edge, 2] = np.minimum(out[chroma_edge, 2], np.maximum(out[chroma_edge, 0], out[chroma_edge, 1]))
+    else:
+        chroma_edge = edge1 & (g > np.maximum(r, b) + 25) & (dist < 135.0)
+        out[chroma_edge, 3] = np.clip((dist[chroma_edge] - 72.0) / 62.0 * 255.0, 0, 255).astype(np.uint8)
+        out[chroma_edge, 1] = np.minimum(out[chroma_edge, 1], np.maximum(out[chroma_edge, 0], out[chroma_edge, 2]))
 
     return Image.fromarray(out, "RGBA")
 
 
-def process_walk_mp4(mp4_path: str, out_dir: str, outline: int = 0, target_h: int = 1440) -> int:
+def process_walk_mp4(mp4_path: str, out_dir: str, outline: int = 0, target_h: int = 720) -> int:
     import av
     c = av.open(mp4_path)
     frames = [f.to_image() for f in c.decode(video=0)]
@@ -172,7 +188,15 @@ def process_walk_mp4(mp4_path: str, out_dir: str, outline: int = 0, target_h: in
     indices = [s0 + int(round(i * p0 / 8.0)) for i in range(8)]
     cleaned = []
     for idx in indices:
-        im = remove_blue_flood(frames[min(idx, n - 1)])
+        im = remove_chroma_flood(frames[min(idx, n - 1)])
+        # Compensa leve perda de contraste/saturação típica de compressão MP4
+        r, g, b, a = im.split()
+        rgb = Image.merge("RGB", (r, g, b))
+        rgb = ImageEnhance.Contrast(rgb).enhance(1.08)
+        rgb = ImageEnhance.Color(rgb).enhance(1.12)
+        rgb = ImageEnhance.Sharpness(rgb).enhance(1.10)
+        r2, g2, b2 = rgb.split()
+        im = Image.merge("RGBA", (r2, g2, b2, a))
         if outline > 0:
             im = add_black_outline(im, outline)
         cleaned.append(im)
@@ -196,7 +220,7 @@ def process_walk_mp4(mp4_path: str, out_dir: str, outline: int = 0, target_h: in
     uh = uy1 - uy0
     scale = target_h / float(uh)
     nw = int(round(uw * scale))
-    canvas_w = max(780, nw)
+    canvas_w = max(390, nw)
     px = (canvas_w - nw) // 2
 
     for i, im in enumerate(cleaned, start=1):
@@ -246,14 +270,14 @@ def main():
             cleaned = add_black_outline(cleaned, args.outline)
 
         w, h = cleaned.size
-        target_h = 1440
+        target_h = 720
         target_w = int(round(w * (target_h / float(h))))
         resized = cleaned.resize((target_w, target_h), Image.Resampling.LANCZOS)
         resized.save(os.path.join(args.skin_dir, target_name), "PNG", optimize=True)
         imported_static += 1
 
     if mp4_file:
-        imported_walk = process_walk_mp4(mp4_file, args.skin_dir, outline=0, target_h=1440)
+        imported_walk = process_walk_mp4(mp4_file, args.skin_dir, outline=0, target_h=720)
 
     print(f"OK: {imported_static} sprites estáticos e {imported_walk} frames de caminhada importados.")
 

@@ -95,16 +95,19 @@
     #aster-wrapper {
       position: relative;
       width: 100%;
-      height: 335px;
+      height: calc(335px * var(--sprite-scale, 1));
       display: flex;
       align-items: flex-end;
       justify-content: center;
       margin: 0 auto;
       transform-origin: bottom center;
       animation: breathe 3.4s ease-in-out infinite;
-      transition: filter 0.8s ease;
+      transition: filter 0.8s ease, height 0.25s ease;
       cursor: grab;
       z-index: 1;
+    }
+    #aster-wrapper.music-groove {
+      animation: musicGroove 1.05s ease-in-out infinite;
     }
     #aster-wrapper:active { cursor: grabbing; }
     #aster-wrapper.sleeping {
@@ -292,6 +295,13 @@
       50%      { transform: scaleY(1.015) scaleX(0.992) translateY(-2px); }
     }
 
+    @keyframes musicGroove {
+      0%, 100% { transform: translateY(0) rotate(-1.3deg) scaleY(1); }
+      25%      { transform: translateY(-4px) rotate(0deg) scaleY(1.018); }
+      50%      { transform: translateY(0) rotate(1.3deg) scaleY(0.99); }
+      75%      { transform: translateY(-4px) rotate(0deg) scaleY(1.018); }
+    }
+
     @keyframes squashJump {
       0%   { transform: scaleY(1) scaleX(1) translateY(0); }
       30%  { transform: scaleY(0.93) scaleX(1.05) translateY(4px); }
@@ -309,7 +319,7 @@
   </div>
 
   <div id="speech-bubble">
-    <div id="speech-text">Tô na área, Kio. Clica em mim ou aperta Alt+A pra conversar.</div>
+    <div id="speech-text">Tô na área. Clica em mim ou aperta Alt+A pra conversar.</div>
   </div>
 
   <div id="aster-wrapper" title="Clique para abrir/fechar chat • Arraste para mover">

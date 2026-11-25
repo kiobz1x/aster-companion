@@ -44,23 +44,7 @@
       stroke-linejoin: round;
     }
     .ico-sm { width: 13px; height: 13px; }
-    .tab-btn .ico { color: #71717a; transition: color 0.2s ease; }
-    .tab-btn:hover .ico { color: var(--accent-soft); }
-    .tab-btn.active .ico { color: var(--accent-bright); }
-    .file-pill {
-      font-family: 'Cascadia Code', Consolas, monospace;
-      font-size: 10.5px;
-      padding: 1px 6px;
-      border-radius: 5px;
-      background: rgba(var(--accent-rgb), 0.12);
-      border: 1px solid rgba(var(--accent-soft-rgb), 0.2);
-      color: var(--accent-soft);
-    }
-    .file-pill.ok {
-      background: rgba(52, 211, 153, 0.1);
-      border-color: rgba(52, 211, 153, 0.24);
-      color: #86efac;
-    }
+
     body {
       background: radial-gradient(circle at 18% 12%, var(--bg-glow) 0%, var(--bg-mid) 55%, var(--bg-deep) 100%);
       color: #f4f4f5;
@@ -70,11 +54,10 @@
       transition: background 0.3s ease;
     }
 
-    /* Sidebar Glass Gothic */
     aside {
-      width: 205px;
+      width: 210px;
       background: var(--sidebar);
-      border-right: 1px solid rgba(var(--accent-soft-rgb), 0.18);
+      border-right: 1px solid rgba(var(--accent-soft-rgb), 0.16);
       display: flex;
       flex-direction: column;
       padding: 18px 12px 14px;
@@ -86,8 +69,8 @@
       display: flex;
       align-items: center;
       gap: 11px;
-      padding: 4px 6px 12px;
-      border-bottom: 1px solid rgba(var(--accent-soft-rgb), 0.15);
+      padding: 4px 6px 13px;
+      border-bottom: 1px solid rgba(var(--accent-soft-rgb), 0.14);
     }
     .avatar-ring {
       width: 44px;
@@ -95,7 +78,7 @@
       border-radius: 50%;
       overflow: hidden;
       border: 2px solid var(--accent);
-      box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.55);
+      box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.5);
       background: var(--bg-glow);
       flex-shrink: 0;
     }
@@ -139,29 +122,29 @@
       text-align: left;
       transition: all 0.2s ease;
     }
-    .tab-btn:hover {
-      background: rgba(var(--accent-rgb), 0.11);
-      color: #e4e4e7;
-    }
+    .tab-btn .ico { color: #71717a; transition: color 0.2s ease; }
+    .tab-btn:hover { background: rgba(var(--accent-rgb), 0.1); color: #e4e4e7; }
+    .tab-btn:hover .ico { color: var(--accent-soft); }
     .tab-btn.active {
       background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.24), rgba(var(--accent-rgb), 0.08));
-      border-color: rgba(var(--accent-soft-rgb), 0.35);
+      border-color: rgba(var(--accent-soft-rgb), 0.34);
       color: var(--accent-text);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
     }
+    .tab-btn.active .ico { color: var(--accent-bright); }
+
     .badge {
-      margin-left: auto;
       font-size: 10px;
-      padding: 1px 6px;
+      font-weight: 600;
+      padding: 1px 7px;
       border-radius: 999px;
-      background: rgba(var(--accent-rgb), 0.24);
+      background: rgba(var(--accent-rgb), 0.22);
       color: var(--accent-text);
     }
 
-    /* Card de status ao vivo */
     .health-card {
       background: var(--surface);
-      border: 1px solid rgba(var(--accent-soft-rgb), 0.16);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.15);
       border-radius: 10px;
       padding: 10px 11px;
       display: flex;
@@ -170,6 +153,7 @@
     }
     .health-title {
       font-size: 10px;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: #71717a;
@@ -184,7 +168,11 @@
       color: var(--accent-bright);
       cursor: pointer;
       font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
+    .health-refresh:hover { color: var(--accent-text); }
     .health-row {
       display: flex;
       align-items: center;
@@ -197,12 +185,11 @@
       height: 7px;
       border-radius: 50%;
       background: #52525b;
-      box-shadow: 0 0 6px rgba(82, 82, 91, 0.6);
     }
     .status-dot.ok { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.75); }
-    .status-dot.off { background: #f87171; box-shadow: 0 0 8px rgba(248, 113, 113, 0.6); }
+    .status-dot.off { background: #f87171; box-shadow: 0 0 8px rgba(248, 113, 113, 0.65); }
+    .status-dot.idle { background: #52525b; opacity: 0.75; }
 
-    /* Área principal */
     .content-wrap {
       flex: 1;
       display: flex;
@@ -213,35 +200,105 @@
     main {
       flex: 1;
       overflow-y: auto;
-      padding: 20px 22px;
+      padding: 22px 24px;
     }
     main::-webkit-scrollbar { width: 5px; }
     main::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb), 0.35); border-radius: 4px; }
 
-    .panel { display: none; flex-direction: column; gap: 13px; }
+    .panel { display: none; flex-direction: column; gap: 14px; }
     .panel.active { display: flex; }
 
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
     .panel-title {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--accent-text);
-      margin-bottom: 2px;
+      margin-bottom: 3px;
     }
     .panel-sub {
-      font-size: 11.5px;
+      font-size: 12px;
       color: #a1a1aa;
-      margin-bottom: 4px;
+      line-height: 1.4;
     }
+
+    .subtabs {
+      display: inline-flex;
+      background: rgba(11, 9, 20, 0.7);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.2);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+      align-self: flex-start;
+      flex-shrink: 0;
+    }
+    .subtab-btn {
+      background: transparent;
+      border: none;
+      border-radius: 7px;
+      color: #a1a1aa;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+    }
+    .subtab-btn:hover { color: #e4e4e7; }
+    .subtab-btn.active {
+      background: rgba(var(--accent-rgb), 0.26);
+      color: var(--accent-text);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+    .subpanel { display: none; flex-direction: column; gap: 13px; }
+    .subpanel.active { display: flex; }
 
     .glass-card {
       background: var(--surface);
-      border: 1px solid rgba(var(--accent-soft-rgb), 0.2);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.18);
       border-radius: 12px;
-      padding: 14px;
+      padding: 15px 16px;
       display: flex;
       flex-direction: column;
-      gap: 11px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+      gap: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+    .card-section-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-bright);
+    }
+
+    details.adv-box {
+      border-top: 1px solid rgba(var(--accent-soft-rgb), 0.12);
+      padding-top: 8px;
+    }
+    details.adv-box summary {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #a1a1aa;
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    details.adv-box summary:hover { color: var(--accent-soft); }
+    details.adv-box summary::-webkit-details-marker { display: none; }
+    details.adv-box[open] .adv-body {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     .field { display: flex; flex-direction: column; gap: 5px; }
@@ -250,10 +307,16 @@
       font-weight: 600;
       color: var(--accent-soft);
     }
-    .field small { font-size: 10.5px; color: #71717a; }
+    .field small { font-size: 11px; color: #71717a; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
 
     input[type="text"], input[type="password"], select {
-      background: rgba(11, 9, 20, 0.72);
+      background: rgba(11, 9, 20, 0.74);
       border: 1px solid rgba(var(--accent-rgb), 0.28);
       border-radius: 8px;
       color: #f4f4f5;
@@ -268,15 +331,14 @@
       box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.22);
     }
 
-    /* Toggle Switch moderno */
     .switch-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 14px;
     }
-    .switch-row strong { font-size: 12.5px; color: #f4f4f5; display: block; }
-    .switch-row small { font-size: 11px; color: #a1a1aa; }
+    .switch-row strong { font-size: 12.5px; color: #f4f4f5; display: block; margin-bottom: 2px; }
+    .switch-row small { font-size: 11.5px; color: #a1a1aa; line-height: 1.35; }
     .switch {
       position: relative;
       width: 42px;
@@ -288,7 +350,7 @@
       position: absolute;
       inset: 0;
       background: #27272a;
-      border: 1px solid rgba(167, 139, 250, 0.25);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.25);
       border-radius: 999px;
       cursor: pointer;
       transition: 0.25s;
@@ -307,7 +369,7 @@
     .switch input:checked + .slider {
       background: linear-gradient(135deg, var(--accent), var(--accent-deep));
       border-color: var(--accent-soft);
-      box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.55);
+      box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.5);
     }
     .switch input:checked + .slider::before {
       transform: translateX(18px);
@@ -329,26 +391,50 @@
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s;
+      transition: all 0.18s;
     }
-    .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn:hover:not(:disabled) { filter: brightness(1.14); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.7; cursor: default; }
+    .btn.dirty {
+      box-shadow: 0 0 0 2px rgba(var(--accent-soft-rgb), 0.55), 0 4px 16px rgba(var(--accent-rgb), 0.45);
+    }
     .btn-ghost {
-      background: rgba(var(--accent-rgb), 0.14);
+      background: rgba(var(--accent-rgb), 0.13);
       color: var(--accent-soft);
-      border: 1px solid rgba(var(--accent-rgb), 0.3);
+      border: 1px solid rgba(var(--accent-rgb), 0.28);
+    }
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 11.5px;
+      border-radius: 7px;
     }
     .btn-danger {
       background: rgba(239, 68, 68, 0.14);
       color: #fca5a5;
       border: 1px solid rgba(239, 68, 68, 0.32);
-      padding: 4px 9px;
+      padding: 5px 10px;
       font-size: 11px;
     }
 
-    .mem-list { display: flex; flex-direction: column; gap: 7px; }
+    .file-pill {
+      font-family: 'Cascadia Code', Consolas, monospace;
+      font-size: 10.5px;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: rgba(var(--accent-rgb), 0.12);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.2);
+      color: var(--accent-soft);
+    }
+    .file-pill.ok {
+      background: rgba(52, 211, 153, 0.1);
+      border-color: rgba(52, 211, 153, 0.24);
+      color: #86efac;
+    }
+
+    .mem-list { display: flex; flex-direction: column; gap: 8px; }
     .mem-item {
-      background: var(--surface);
-      border: 1px solid rgba(var(--accent-rgb), 0.2);
+      background: rgba(11, 9, 20, 0.55);
+      border: 1px solid rgba(var(--accent-rgb), 0.18);
       border-radius: 9px;
       padding: 8px 11px;
       display: flex;
@@ -359,29 +445,100 @@
     }
     .mem-empty {
       color: #71717a;
-      font-size: 12px;
+      font-size: 11.5px;
       text-align: center;
-      padding: 26px 12px;
-      border: 1px dashed rgba(var(--accent-rgb), 0.28);
+      padding: 18px 14px;
+      border: 1px dashed rgba(var(--accent-rgb), 0.25);
+      border-radius: 9px;
+      line-height: 1.45;
+    }
+
+    .skin-card {
+      background: var(--surface);
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.18);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.2s ease;
+    }
+    .skin-card.is-active {
+      border-color: rgba(var(--accent-soft-rgb), 0.55);
+      box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.25);
+    }
+    .skin-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .skin-meta {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+    .skin-thumb {
+      width: 46px;
+      height: 46px;
       border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.28);
+      background: rgba(8, 6, 16, 0.55);
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    .skin-thumb img {
+      width: 100%;
+      height: 155%;
+      object-fit: cover;
+      object-position: top center;
+    }
+    .skin-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f5f3ff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .skin-sub {
+      font-size: 11.5px;
+      color: #a1a1aa;
+      margin-top: 2px;
+    }
+    .skin-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 9px;
+      border-top: 1px solid rgba(var(--accent-soft-rgb), 0.12);
+    }
+    .skin-checklist {
+      display: none;
+      border-top: 1px solid rgba(var(--accent-soft-rgb), 0.14);
+      padding-top: 8px;
     }
 
     .theme-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
     }
     .theme-card {
       background: var(--surface);
       border: 1px solid rgba(var(--accent-soft-rgb), 0.18);
       border-radius: 12px;
-      padding: 12px;
+      padding: 12px 13px;
       cursor: pointer;
       text-align: left;
       transition: all 0.2s ease;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
     }
     .theme-card:hover {
       border-color: rgba(var(--accent-soft-rgb), 0.55);
@@ -389,22 +546,18 @@
     }
     .theme-card.active {
       border-color: var(--accent-bright);
-      box-shadow: 0 0 0 1px var(--accent-bright), 0 6px 20px rgba(var(--accent-rgb), 0.25);
+      box-shadow: 0 0 0 1px var(--accent-bright), 0 6px 20px rgba(var(--accent-rgb), 0.24);
     }
-    .swatches {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+    .swatches { display: flex; align-items: center; gap: 6px; }
     .swatch {
-      width: 16px;
-      height: 16px;
+      width: 15px;
+      height: 15px;
       border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.22);
     }
 
     footer {
-      padding: 12px 22px;
+      padding: 12px 24px;
       border-top: 1px solid rgba(var(--accent-soft-rgb), 0.14);
       display: flex;
       align-items: center;
@@ -422,144 +575,186 @@
       </div>
       <div class="brand-info">
         <h1>Aster</h1>
-        <span>Companion v1.2.0</span>
+        <span>Companion v1.3.0</span>
       </div>
     </div>
 
     <nav>
-      <button class="tab-btn active" data-tab="ia">
+      <button class="tab-btn active" data-tab="cerebro">
         <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
-        <span>IA &amp; Conexões</span>
+        <span>Cérebro (IA)</span>
       </button>
       <button class="tab-btn" data-tab="voz">
         <svg class="ico" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
-        <span>Voz &amp; Fish Audio</span>
+        <span>Voz</span>
+      </button>
+      <button class="tab-btn" data-tab="visual">
+        <svg class="ico" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        <span>Visual</span>
+      </button>
+      <button class="tab-btn" data-tab="integracoes">
+        <svg class="ico" viewBox="0 0 24 24"><line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></svg>
+        <span>Integrações</span>
       </button>
       <button class="tab-btn" data-tab="memoria">
         <svg class="ico" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
-        <span>Memórias</span>
-        <span id="mem-count" class="badge">0</span>
-      </button>
-      <button class="tab-btn" data-tab="docs">
-        <svg class="ico" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8M16 13H8M16 17H8"/></svg>
-        <span>Docs (RAG)</span>
-        <span id="doc-count" class="badge">0</span>
-      </button>
-      <button class="tab-btn" data-tab="skins">
-        <svg class="ico" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-        <span>Skins</span>
-        <span id="skin-count" class="badge">1</span>
-      </button>
-      <button class="tab-btn" data-tab="temas">
-        <svg class="ico" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
-        <span>Temas</span>
+        <span>Memória</span>
       </button>
     </nav>
 
     <div class="health-card">
       <div class="health-title">
-        <span>Status ao vivo</span>
+        <span>Status</span>
         <button id="refresh-health" class="health-refresh" title="Atualizar status">
           <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
         </button>
       </div>
-      <div class="health-row"><span>Ollama</span><span id="dot-ollama" class="status-dot"></span></div>
-      <div class="health-row"><span>Hermes</span><span id="dot-hermes" class="status-dot"></span></div>
-      <div class="health-row"><span>Fish Audio</span><span id="dot-fish" class="status-dot"></span></div>
+      <div class="health-row"><span>Ollama</span><span id="dot-ollama" class="status-dot idle"></span></div>
+      <div class="health-row"><span>Nuvem</span><span id="dot-cloud" class="status-dot idle"></span></div>
+      <div class="health-row"><span>Voz (TTS)</span><span id="dot-fish" class="status-dot idle"></span></div>
+      <div class="health-row"><span>Hermes</span><span id="dot-hermes" class="status-dot idle"></span></div>
     </div>
   </aside>
 
   <div class="content-wrap">
     <main>
-      <section id="tab-ia" class="panel active">
+      <!-- 1. CÉREBRO (IA) -->
+      <section id="tab-cerebro" class="panel active">
         <div>
-          <div class="panel-title">IA &amp; Conexões</div>
-          <div class="panel-sub">Cérebro híbrido: Ollama local + escalonamento para Hermes.</div>
+          <div class="panel-title">Cérebro (IA)</div>
+          <div class="panel-sub">Escolha qual modelo alimenta as conversas e a visão de tela da Aster.</div>
         </div>
+
         <div class="glass-card">
-          <div class="field">
-            <label>Ollama URL</label>
-            <input id="ollama_url" type="text" placeholder="http://127.0.0.1:11434/api/chat" />
-          </div>
-          <div class="field">
-            <div class="row" style="justify-content:space-between">
-              <label for="ollama_model">Modelo Local (Ollama)</label>
-              <button id="refresh-models-btn" class="health-refresh" type="button" title="Recarregar modelos do Ollama" style="display:inline-flex;align-items:center;gap:4px">
-                <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-                <span>Atualizar lista</span>
-              </button>
+          <div class="row" style="align-items:flex-end">
+            <div class="field" style="flex:1">
+              <label for="ai_provider">Onde a IA vai rodar</label>
+              <select id="ai_provider">
+                <option value="ollama">Local no meu PC (Ollama — grátis e offline)</option>
+                <option value="cloud">Na Nuvem (Gemini / Groq / OpenRouter / OpenAI)</option>
+              </select>
             </div>
-            <select id="ollama_model"></select>
-          </div>
-          <div class="field">
-            <label for="ollama_vision_model">Modelo de Visão de Tela (Ollama)</label>
-            <select id="ollama_vision_model"></select>
+            <button id="test-ai-btn" class="btn btn-ghost" type="button">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Testar IA</span>
+            </button>
           </div>
         </div>
-        <div class="glass-card">
-          <div class="field">
-            <label>Hermes URL</label>
-            <input id="hermes_url" type="text" placeholder="http://127.0.0.1:8642/v1/chat/completions" />
+
+        <!-- Card Ollama (visível quando provedor = ollama) -->
+        <div id="ollama-card" class="glass-card">
+          <div class="row" style="justify-content:space-between">
+            <div class="card-section-title">Ollama Local</div>
+            <button id="refresh-models-btn" class="health-refresh" type="button" title="Recarregar modelos instalados">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              <span>Atualizar modelos</span>
+            </button>
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="ollama_model">Modelo de Chat</label>
+              <select id="ollama_model"></select>
+            </div>
+            <div class="field">
+              <label for="ollama_vision_model">Modelo de Visão</label>
+              <select id="ollama_vision_model"></select>
+            </div>
+          </div>
+          <details class="adv-box">
+            <summary>Avançado (URL local)</summary>
+            <div class="adv-body">
+              <div class="field">
+                <label for="ollama_url">Endereço do Ollama</label>
+                <input id="ollama_url" type="text" placeholder="http://127.0.0.1:11434/api/chat" />
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Card Nuvem (visível quando provedor = cloud) -->
+        <div id="cloud-card" class="glass-card" style="display:none">
+          <div class="card-section-title">API na Nuvem (fallback automático para Ollama se cair)</div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="cloud_preset">Serviço</label>
+              <select id="cloud_preset">
+                <option value="custom">Personalizado</option>
+                <option value="gemini">Google Gemini (grátis + visão)</option>
+                <option value="groq">Groq (ultra rápido)</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="openai">OpenAI</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="cloud_model">Modelo</label>
+              <input id="cloud_model" type="text" placeholder="gemini-2.5-flash" />
+            </div>
           </div>
           <div class="field">
-            <label>Modelo Hermes</label>
-            <input id="hermes_model" type="text" placeholder="hermes-agent" />
-          </div>
-          <div class="field">
-            <label>Hermes API Key</label>
+            <label for="cloud_api_key">Chave de API (API Key)</label>
             <div class="row">
-              <input id="hermes_key" type="password" placeholder="Chave local do Hermes" />
-              <button id="toggle-key" class="btn btn-ghost" type="button" title="Mostrar/ocultar chave">
+              <input id="cloud_api_key" type="password" placeholder="Cole sua API Key aqui" />
+              <button id="toggle-cloud-key" class="btn btn-ghost" type="button" title="Mostrar/ocultar chave">
                 <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
             </div>
           </div>
-          <div class="field">
-            <label>Discord Webhook URL</label>
-            <input id="discord_webhook_url" type="password" placeholder="https://discord.com/api/webhooks/..." />
-          </div>
+          <details class="adv-box">
+            <summary>Avançado (Endpoint URL)</summary>
+            <div class="adv-body">
+              <div class="field">
+                <label for="cloud_url">Endpoint OpenAI-compatible</label>
+                <input id="cloud_url" type="text" placeholder="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" />
+              </div>
+            </div>
+          </details>
         </div>
       </section>
 
+      <!-- 2. VOZ -->
       <section id="tab-voz" class="panel">
         <div>
-          <div class="panel-title">Voz &amp; Fish Audio</div>
-          <div class="panel-sub">Voz personalizada via Fish Audio (baixa latência) + microfone Whisper local.</div>
+          <div class="panel-title">Voz</div>
+          <div class="panel-sub">Configure como a Aster fala (saída) e como ela te escuta pelo microfone (entrada).</div>
         </div>
+
         <div class="glass-card">
+          <div class="card-section-title">Fala da Aster (Fish Audio)</div>
           <div class="switch-row">
             <div>
-              <strong>Voz Falada (Fish Audio)</strong>
-              <small>Usa sua voz clonada nas respostas e comentários</small>
+              <strong>Ativar voz falada</strong>
+              <small>Lê em voz alta respostas, comentários e lembretes</small>
             </div>
             <label class="switch">
               <input id="tts_enabled_cb" type="checkbox" checked />
               <span class="slider"></span>
             </label>
           </div>
-          <div class="field">
-            <label>Fish Audio API Key</label>
-            <div class="row">
-              <input id="fish_api_key" type="password" placeholder="Cole sua API Key do fish.audio" />
-              <button id="toggle-fish-key" class="btn btn-ghost" type="button" title="Mostrar/ocultar chave">
-                <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
+          <div class="grid-2">
+            <div class="field">
+              <label for="fish_api_key">Chave Fish Audio</label>
+              <div class="row">
+                <input id="fish_api_key" type="password" placeholder="API Key do fish.audio" />
+                <button id="toggle-fish-key" class="btn btn-ghost" type="button" title="Mostrar/ocultar chave">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="fish_voice_id">ID da Voz</label>
+              <input id="fish_voice_id" type="text" placeholder="reference_id da voz" />
             </div>
           </div>
           <div class="field">
-            <label>Fish Audio Voice ID (reference_id)</label>
-            <input id="fish_voice_id" type="text" placeholder="Ex: 7f92f8afb8ec43bf81429cc1c9199cb1" />
-          </div>
-          <div class="field">
             <div class="row" style="justify-content:space-between">
-              <label for="tts_volume">Volume da Voz da Aster</label>
+              <label for="tts_volume">Volume</label>
               <span id="tts_volume_label" style="font-size:12px;font-weight:700;color:var(--accent-text)">70%</span>
             </div>
             <input id="tts_volume" type="range" min="0" max="100" step="5" value="70" style="width:100%;accent-color:var(--accent);cursor:pointer" />
           </div>
-          <div class="row">
+          <div class="row" style="justify-content:space-between">
             <div class="field" style="flex:1">
-              <label>Modelo Fish Audio</label>
+              <label for="fish_model">Modelo de síntese</label>
               <select id="fish_model">
                 <option value="s1">s1 — expressivo (recomendado)</option>
                 <option value="speech-1.6">speech-1.6</option>
@@ -574,8 +769,9 @@
         </div>
 
         <div class="glass-card">
+          <div class="card-section-title">Microfone (Escuta offline)</div>
           <div class="field">
-            <label>Modelo Whisper (Microfone STT em CPU)</label>
+            <label for="whisper_model">Precisão do reconhecimento (Whisper CPU)</label>
             <select id="whisper_model">
               <option value="tiny">tiny — ultra rápido (~100 MB)</option>
               <option value="base">base — equilibrado (recomendado)</option>
@@ -586,87 +782,219 @@
         </div>
       </section>
 
+      <!-- 3. VISUAL (SUB-ABAS: SKINS | CORES & EFEITOS) -->
+      <section id="tab-visual" class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Visual</div>
+            <div class="panel-sub">Skins, paleta de cores, tamanho na tela e efeitos de fundo.</div>
+          </div>
+          <div class="subtabs" data-group="visual">
+            <button class="subtab-btn active" data-sub="skins" type="button">Skins</button>
+            <button class="subtab-btn" data-sub="cores" type="button">Cores &amp; Efeitos</button>
+          </div>
+        </div>
+
+        <div id="sub-skins" class="subpanel active">
+          <div class="row">
+            <input id="new-skin-input" type="text" placeholder="Nome da nova skin" />
+            <button id="create-skin-btn" class="btn" type="button">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg>
+              <span>Nova Skin</span>
+            </button>
+          </div>
+          <div class="row">
+            <button id="open-skins-btn" class="btn btn-ghost btn-sm" type="button">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+              <span>Abrir pasta skins</span>
+            </button>
+            <button id="refresh-skins-btn" class="btn btn-ghost btn-sm" type="button">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              <span>Atualizar</span>
+            </button>
+          </div>
+          <div id="skins-list" class="mem-list"></div>
+          <details class="adv-box" style="border-top:none;padding-top:2px">
+            <summary>Opções do importador (Beta)</summary>
+            <div class="adv-body">
+              <label style="display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#d4d4d8;cursor:pointer">
+                <input id="import-outline-cb" type="checkbox" checked style="accent-color:var(--accent)" />
+                <span>Adicionar contorno preto suave (2px) em imagens com fundo removido</span>
+              </label>
+            </div>
+          </details>
+        </div>
+
+        <div id="sub-cores" class="subpanel">
+          <div id="themes-grid" class="theme-grid"></div>
+          <div class="glass-card">
+            <div class="field">
+              <div class="row" style="justify-content:space-between">
+                <label for="sprite_scale">Tamanho da Aster na tela</label>
+                <span id="sprite_scale_label" style="font-size:12px;font-weight:700;color:var(--accent-text)">100%</span>
+              </div>
+              <input id="sprite_scale" type="range" min="75" max="130" step="5" value="100" style="width:100%;accent-color:var(--accent);cursor:pointer" />
+            </div>
+            <div class="switch-row" style="padding-top:6px;border-top:1px solid rgba(var(--accent-soft-rgb),0.12)">
+              <div>
+                <strong>Efeitos sutis de partículas</strong>
+                <small>Flocos leves na skin natalina, pétalas no tema Sakura ou brilhos suaves ao redor</small>
+              </div>
+              <label class="switch">
+                <input id="particles_enabled_cb" type="checkbox" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. INTEGRAÇÕES (SUB-ABAS: JOGOS & SERVIÇOS | LEMBRETES & POMODORO) -->
+      <section id="tab-integracoes" class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Integrações</div>
+            <div class="panel-sub">Modo Jogo, lembretes/Pomodoro com voz e serviços externos.</div>
+          </div>
+          <div class="subtabs" data-group="integracoes">
+            <button class="subtab-btn active" data-sub="servicos" type="button">Jogos &amp; Serviços</button>
+            <button class="subtab-btn" data-sub="pomodoro" type="button">Pomodoro &amp; Timers</button>
+          </div>
+        </div>
+
+        <div id="sub-servicos" class="subpanel active">
+          <div class="glass-card">
+            <div class="card-section-title">Jogos</div>
+            <div class="switch-row">
+              <div>
+                <strong>Modo Jogo</strong>
+                <small>Detecta jogos abertos (LoL, Valorant, CS2, Minecraft, Elden Ring e mais) e reage a eventos ao vivo</small>
+              </div>
+              <label class="switch">
+                <input id="lol_enabled_cb" type="checkbox" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-section-title">Discord</div>
+            <div class="field">
+              <label for="discord_webhook_url">Webhook URL (opcional)</label>
+              <input id="discord_webhook_url" type="password" placeholder="https://discord.com/api/webhooks/..." />
+              <small>Permite postar mensagens em um canal com /discord</small>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <details class="adv-box" style="border-top:none;padding-top:0">
+              <summary style="color:var(--accent-bright);font-size:11px;text-transform:uppercase;letter-spacing:0.08em">Agente Externo — Hermes (opcional)</summary>
+              <div class="adv-body">
+                <div class="grid-2">
+                  <div class="field">
+                    <label for="hermes_url">Endereço (URL)</label>
+                    <input id="hermes_url" type="text" placeholder="http://127.0.0.1:8642/v1/chat/completions" />
+                  </div>
+                  <div class="field">
+                    <label for="hermes_model">Modelo</label>
+                    <input id="hermes_model" type="text" placeholder="hermes-agent" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="hermes_key">Chave de API</label>
+                  <div class="row">
+                    <input id="hermes_key" type="password" placeholder="Chave local do Hermes" />
+                    <button id="toggle-key" class="btn btn-ghost" type="button" title="Mostrar/ocultar chave">
+                      <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div id="sub-pomodoro" class="subpanel">
+          <div class="glass-card">
+            <div class="card-section-title">Pomodoro rápido</div>
+            <div class="row" style="flex-wrap:wrap">
+              <button id="pomo-25-btn" class="btn btn-sm" type="button">Iniciar 25 / 5 min</button>
+              <button id="pomo-50-btn" class="btn btn-ghost btn-sm" type="button">Iniciar 50 / 10 min</button>
+              <button id="rem-clear-btn" class="btn btn-danger" type="button" style="margin-left:auto">Cancelar todos</button>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-section-title">Novo lembrete com voz</div>
+            <div class="row">
+              <input id="rem-mins-input" type="text" placeholder="Min (ex: 15)" style="width:95px;flex-shrink:0" />
+              <input id="rem-label-input" type="text" placeholder="O que lembrar? (ex: beber água, olhar o forno)" />
+              <button id="rem-add-btn" class="btn btn-sm" type="button">Agendar</button>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="row" style="justify-content:space-between">
+              <div class="card-section-title">Ativos agora</div>
+              <span id="rem-count" class="badge">0</span>
+            </div>
+            <div id="rem-list" class="mem-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. MEMÓRIA (UNIFICADA: LEMBRAR SEMPRE + ARQUIVOS DE APOIO) -->
       <section id="tab-memoria" class="panel">
         <div>
-          <div class="panel-title">Memória Persistente</div>
-          <div class="panel-sub">Fatos que a Aster lembra entre sessões (salvos em memory.json).</div>
+          <div class="panel-title">Memória</div>
+          <div class="panel-sub">Tudo o que a Aster lembra sobre você — fatos fixos sempre ativos e arquivos consultados sob demanda.</div>
         </div>
-        <div class="row">
-          <input id="new-mem-input" type="text" placeholder="Ex: Minha banda favorita é Linkin Park" />
-          <button id="add-mem-btn" class="btn" type="button">Adicionar</button>
-        </div>
-        <div id="mem-list" class="mem-list"></div>
-      </section>
 
-      <section id="tab-docs" class="panel">
-        <div>
-          <div class="panel-title">Documentos Locais (RAG)</div>
-        </div>
-        <div class="row">
-          <button id="open-docs-btn" class="btn" type="button">
-            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
-            <span>Abrir pasta docs</span>
-          </button>
-          <button id="refresh-docs-btn" class="btn btn-ghost" type="button">
-            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-            <span>Atualizar</span>
-          </button>
-        </div>
-        <div id="docs-list" class="mem-list"></div>
-      </section>
-
-      <section id="tab-skins" class="panel">
-        <div>
-          <div class="panel-title">Skins &amp; Aparência</div>
-          <div class="panel-sub">Com apenas os 6 sprites essenciais sua skin já fica completa sem nunca voltar pro visual padrão.</div>
-        </div>
-        <div class="row">
-          <input id="new-skin-input" type="text" placeholder="Nome da nova skin" />
-          <button id="create-skin-btn" class="btn" type="button">
-            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg>
-            <span>Nova Skin</span>
-          </button>
-        </div>
-        <div class="row" style="flex-wrap:wrap">
-          <button id="open-skins-btn" class="btn btn-ghost" type="button">
-            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
-            <span>Abrir pasta skins</span>
-          </button>
-          <button id="refresh-skins-btn" class="btn btn-ghost" type="button">
-            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-            <span>Atualizar</span>
-          </button>
-          <label style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#a1a1aa;cursor:pointer">
-            <input id="import-outline-cb" type="checkbox" checked style="accent-color:var(--accent)" />
-            <span>Contorno preto (2px) ao importar</span>
-          </label>
-        </div>
-        <div id="skins-list" class="mem-list"></div>
-      </section>
-
-      <section id="tab-temas" class="panel">
-        <div>
-          <div class="panel-title">Presets de Cores</div>
-          <div class="panel-sub">Muda ao vivo as cores das Configurações, do balão de fala e da pílula da Aster.</div>
-        </div>
-        <div id="themes-grid" class="theme-grid"></div>
         <div class="glass-card">
-          <div class="switch-row">
-            <div>
-              <strong>Efeitos sutis de partículas</strong>
-              <small>Flocos leves na skin natalina, pétalas no tema Sakura ou brilhos sutis no fundo</small>
-            </div>
-            <label class="switch">
-              <input id="particles_enabled_cb" type="checkbox" checked />
-              <span class="slider"></span>
-            </label>
+          <div class="field">
+            <label for="user_name">Como a Aster deve te chamar</label>
+            <input id="user_name" type="text" placeholder="Ex: Kio, Ana, Leo... (opcional)" />
+            <small>Usado no jeito que ela conversa, nos lembretes e nas reações de jogos</small>
           </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="row" style="justify-content:space-between">
+            <div class="card-section-title">Lembrar sempre</div>
+            <span id="mem-count" class="badge">0</span>
+          </div>
+          <div class="row">
+            <input id="new-mem-input" type="text" placeholder="Ex: Minha banda favorita é Linkin Park" />
+            <button id="add-mem-btn" class="btn" type="button">Adicionar</button>
+          </div>
+          <div id="mem-list" class="mem-list"></div>
+        </div>
+
+        <div class="glass-card">
+          <div class="row" style="justify-content:space-between">
+            <div>
+              <div class="card-section-title">Arquivos de apoio</div>
+              <small style="color:#a1a1aa;font-size:11px">Textos maiores consultados automaticamente quando você pergunta sobre o assunto</small>
+            </div>
+            <span id="doc-count" class="badge">0</span>
+          </div>
+          <div class="row">
+            <button id="open-docs-btn" class="btn btn-ghost btn-sm" type="button">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+              <span>Abrir pasta</span>
+            </button>
+            <button id="refresh-docs-btn" class="btn btn-ghost btn-sm" type="button">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              <span>Atualizar</span>
+            </button>
+          </div>
+          <div id="docs-list" class="mem-list"></div>
         </div>
       </section>
     </main>
 
     <footer>
-      <span id="status-msg">Salvo direto no .env</span>
+      <span id="status-msg">Salvo localmente no .env</span>
       <button id="save-btn" class="btn" type="button">Salvar Configurações</button>
     </footer>
   </div>
@@ -674,6 +1002,7 @@
   <script src="themes.js"></script>
   <script>
     const invoke = window.__TAURI__?.core?.invoke;
+    const tauriEvent = window.__TAURI__?.event;
     const statusMsg = document.getElementById('status-msg');
     const saveBtn = document.getElementById('save-btn');
     const memList = document.getElementById('mem-list');
@@ -683,10 +1012,131 @@
     const newMemInput = document.getElementById('new-mem-input');
     const ttsCb = document.getElementById('tts_enabled_cb');
     const particlesCb = document.getElementById('particles_enabled_cb');
+    const lolCb = document.getElementById('lol_enabled_cb');
+    const spriteScaleInput = document.getElementById('sprite_scale');
+    const spriteScaleLabel = document.getElementById('sprite_scale_label');
+    const aiProviderSel = document.getElementById('ai_provider');
+    const ollamaCard = document.getElementById('ollama-card');
+    const cloudCard = document.getElementById('cloud-card');
+    const cloudPresetSel = document.getElementById('cloud_preset');
     const ttsVolumeInput = document.getElementById('tts_volume');
     const ttsVolumeLabel = document.getElementById('tts_volume_label');
     let loadedActiveSkin = 'padrao';
     let loadedUiTheme = 'gothic';
+    let hasUnsavedChanges = false;
+
+    const CLOUD_PRESETS = {
+      gemini: { url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', model: 'gemini-2.5-flash' },
+      groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.3-70b-versatile' },
+      openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions', model: 'google/gemini-2.5-flash' },
+      openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
+    };
+
+    const TEXT_FIELDS = [
+      'ai_provider', 'ollama_url', 'ollama_model', 'ollama_vision_model',
+      'cloud_url', 'cloud_model', 'cloud_api_key',
+      'hermes_url', 'hermes_model', 'hermes_key', 'discord_webhook_url',
+      'whisper_model', 'fish_api_key', 'fish_voice_id', 'fish_model',
+      'user_name'
+    ];
+
+    function setStatus(msg, isErr = false) {
+      statusMsg.textContent = msg;
+      statusMsg.style.color = isErr ? '#fca5a5' : 'var(--accent-soft)';
+    }
+
+    function markDirty() {
+      saveBtn.style.display = 'inline-flex';
+      if (hasUnsavedChanges) return;
+      hasUnsavedChanges = true;
+      saveBtn.classList.add('dirty');
+      setStatus('Alterações não salvas — clique em Salvar Configurações.');
+    }
+
+    function clearDirty() {
+      hasUnsavedChanges = false;
+      saveBtn.classList.remove('dirty');
+    }
+
+    // Navegação principal (5 abas)
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+        const needsSave = btn.dataset.tab === 'cerebro' || btn.dataset.tab === 'voz' || btn.dataset.tab === 'integracoes' || hasUnsavedChanges;
+        saveBtn.style.display = needsSave ? 'inline-flex' : 'none';
+        if (btn.dataset.tab === 'visual') { loadSkins(); renderThemes(); }
+        if (btn.dataset.tab === 'memoria') { loadMemories(); loadDocs(); }
+      });
+    });
+
+    // Sub-abas internas (Visual)
+    document.querySelectorAll('.subtabs').forEach((group) => {
+      const buttons = group.querySelectorAll('.subtab-btn');
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const section = group.closest('.panel');
+          buttons.forEach((b) => b.classList.remove('active'));
+          section.querySelectorAll('.subpanel').forEach((p) => p.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(`sub-${btn.dataset.sub}`).classList.add('active');
+          if (btn.dataset.sub === 'skins') loadSkins();
+          if (btn.dataset.sub === 'cores') renderThemes();
+          if (btn.dataset.sub === 'pomodoro') requestRemindersList();
+        });
+      });
+    });
+
+    function syncProviderCards() {
+      const isCloud = aiProviderSel.value === 'cloud';
+      ollamaCard.style.display = isCloud ? 'none' : 'flex';
+      cloudCard.style.display = isCloud ? 'flex' : 'none';
+    }
+    aiProviderSel.addEventListener('change', () => { syncProviderCards(); markDirty(); });
+    cloudPresetSel.addEventListener('change', () => {
+      const p = CLOUD_PRESETS[cloudPresetSel.value];
+      if (!p) return;
+      document.getElementById('cloud_url').value = p.url;
+      document.getElementById('cloud_model').value = p.model;
+      markDirty();
+    });
+
+    // Marca como "não salvo" quando qualquer campo manual for editado
+    TEXT_FIELDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', markDirty);
+    });
+    ttsCb.addEventListener('change', markDirty);
+    ttsVolumeInput.addEventListener('input', () => {
+      ttsVolumeLabel.textContent = `${ttsVolumeInput.value}%`;
+      markDirty();
+    });
+
+    ['toggle-key:hermes_key', 'toggle-fish-key:fish_api_key', 'toggle-cloud-key:cloud_api_key'].forEach((pair) => {
+      const [btnId, inputId] = pair.split(':');
+      document.getElementById(btnId).addEventListener('click', () => {
+        const el = document.getElementById(inputId);
+        el.type = el.type === 'password' ? 'text' : 'password';
+      });
+    });
+
+    spriteScaleInput.addEventListener('input', () => {
+      spriteScaleLabel.textContent = `${spriteScaleInput.value}%`;
+    });
+    spriteScaleInput.addEventListener('change', async () => {
+      const ok = await saveAll(true);
+      if (ok) setStatus(`Tamanho da Aster ajustado para ${spriteScaleInput.value}%.`);
+    });
+    particlesCb.addEventListener('change', async () => {
+      const ok = await saveAll(true);
+      if (ok) setStatus(particlesCb.checked ? 'Partículas sutis ativadas.' : 'Partículas desativadas.');
+    });
+    lolCb.addEventListener('change', async () => {
+      const ok = await saveAll(true);
+      if (ok) setStatus(lolCb.checked ? 'Modo Jogo ativado.' : 'Modo Jogo desativado.');
+    });
 
     function populateModelSelect(selectEl, models, currentValue, fallbackDefault) {
       const target = (currentValue || fallbackDefault || '').trim();
@@ -719,59 +1169,21 @@
       const n = await refreshOllamaModels();
       setStatus(n ? `${n} modelo(s) encontrado(s) no Ollama.` : 'Ollama offline ou sem modelos instalados.', !n);
     });
-    particlesCb.addEventListener('change', async () => {
-      const ok = await saveAll(true);
-      if (ok) setStatus(particlesCb.checked ? 'Partículas sutis ativadas.' : 'Partículas desativadas.');
-    });
-
-    ttsVolumeInput.addEventListener('input', () => {
-      ttsVolumeLabel.textContent = `${ttsVolumeInput.value}%`;
-    });
-
-    const TEXT_FIELDS = [
-      'ollama_url', 'ollama_model', 'ollama_vision_model', 'hermes_url', 'hermes_model',
-      'hermes_key', 'discord_webhook_url', 'whisper_model',
-      'fish_api_key', 'fish_voice_id', 'fish_model'
-    ];
-
-    function setStatus(msg, isErr = false) {
-      statusMsg.textContent = msg;
-      statusMsg.style.color = isErr ? '#fca5a5' : '#c4b5fd';
-    }
-
-    document.querySelectorAll('.tab-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-        saveBtn.style.display = (btn.dataset.tab === 'memoria' || btn.dataset.tab === 'docs' || btn.dataset.tab === 'skins' || btn.dataset.tab === 'temas') ? 'none' : 'inline-block';
-        if (btn.dataset.tab === 'docs') loadDocs();
-        if (btn.dataset.tab === 'skins') loadSkins();
-        if (btn.dataset.tab === 'temas') renderThemes();
-      });
-    });
-
-    document.getElementById('toggle-key').addEventListener('click', () => {
-      const el = document.getElementById('hermes_key');
-      el.type = el.type === 'password' ? 'text' : 'password';
-    });
-    document.getElementById('toggle-fish-key').addEventListener('click', () => {
-      const el = document.getElementById('fish_api_key');
-      el.type = el.type === 'password' ? 'text' : 'password';
-    });
 
     async function refreshHealth() {
       try {
         const h = await invoke('check_services_health');
-        const setDot = (id, ok) => {
+        const setDot = (id, state) => {
           const el = document.getElementById(id);
-          el.classList.remove('ok', 'off');
-          el.classList.add(ok ? 'ok' : 'off');
+          el.classList.remove('ok', 'off', 'idle');
+          el.classList.add(state);
         };
-        setDot('dot-ollama', h.ollama_ok);
-        setDot('dot-hermes', h.hermes_ok);
-        setDot('dot-fish', h.fish_configured);
+        const usingCloud = h.ai_provider === 'cloud';
+        // Só fica vermelho se o motor PRINCIPAL escolhido estiver indisponível; opcionais ficam cinza neutro
+        setDot('dot-ollama', h.ollama_ok ? 'ok' : (usingCloud ? 'idle' : 'off'));
+        setDot('dot-cloud', h.cloud_configured ? 'ok' : (usingCloud ? 'off' : 'idle'));
+        setDot('dot-fish', h.fish_configured ? 'ok' : 'idle');
+        setDot('dot-hermes', h.hermes_ok ? 'ok' : 'idle');
       } catch (_) {}
     }
     document.getElementById('refresh-health').addEventListener('click', refreshHealth);
@@ -783,6 +1195,8 @@
         active_skin: loadedActiveSkin || 'padrao',
         ui_theme: loadedUiTheme || 'gothic',
         particles_enabled: particlesCb.checked ? '1' : '0',
+        sprite_scale: String(spriteScaleInput.value || '100'),
+        lol_enabled: lolCb.checked ? '1' : '0',
       };
       TEXT_FIELDS.forEach((k) => {
         cfg[k] = document.getElementById(k).value.trim();
@@ -800,20 +1214,88 @@
             el.value = cfg[k];
           }
         });
+        syncProviderCards();
         ttsCb.checked = cfg.tts_enabled !== '0';
         particlesCb.checked = cfg.particles_enabled !== '0';
+        lolCb.checked = cfg.lol_enabled !== '0';
         const vol = Number(cfg.tts_volume ?? 70);
         const clampedVol = Number.isFinite(vol) ? Math.max(0, Math.min(100, vol)) : 70;
         ttsVolumeInput.value = String(clampedVol);
         ttsVolumeLabel.textContent = `${clampedVol}%`;
+        const sc = Number(cfg.sprite_scale ?? 100);
+        const clampedSc = Number.isFinite(sc) ? Math.max(75, Math.min(130, sc)) : 100;
+        spriteScaleInput.value = String(clampedSc);
+        spriteScaleLabel.textContent = `${clampedSc}%`;
         loadedActiveSkin = cfg.active_skin || 'padrao';
         loadedUiTheme = cfg.ui_theme || 'gothic';
         window.applyAsterTheme?.(loadedUiTheme);
         renderThemes();
+        clearDirty();
       } catch (e) {
         setStatus(`Erro ao carregar: ${e}`, true);
       }
     }
+
+    async function saveAll(silent = false) {
+      try {
+        await invoke('save_settings', { cfg: collectConfig() });
+        await invoke('stop_voice').catch(() => {});
+        clearDirty();
+        refreshHealth();
+        if (!silent) setStatus('Configurações salvas.');
+        return true;
+      } catch (e) {
+        setStatus(`Erro ao salvar: ${e}`, true);
+        return false;
+      }
+    }
+    saveBtn.addEventListener('click', () => saveAll(false));
+
+    document.getElementById('test-ai-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('test-ai-btn');
+      btn.disabled = true;
+      setStatus('Testando conexão com a IA...');
+      const ok = await saveAll(true);
+      if (!ok) {
+        btn.disabled = false;
+        return;
+      }
+      try {
+        const res = await invoke('test_ai_connection');
+        setStatus(res || 'Conexão com a IA OK.');
+      } catch (e) {
+        setStatus(`Erro na IA: ${e}`, true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('test-voice-btn').addEventListener('click', async () => {
+      setStatus('Testando voz no Fish Audio...');
+      const ok = await saveAll(true);
+      if (!ok) return;
+      try {
+        const nm = document.getElementById('user_name')?.value?.trim();
+        const payload = await invoke('synthesize_fish_speech', {
+          text: nm ? `E aí ${nm}, teste de voz da Aster no Fish Audio.` : 'E aí, teste de voz da Aster no Fish Audio.'
+        });
+        if (!payload || !payload.audio_base64) {
+          setStatus('Ative a voz e informe a chave Fish Audio primeiro.', true);
+          return;
+        }
+        const bin = atob(payload.audio_base64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([bytes], { type: payload.mime }));
+        const audio = new Audio(url);
+        audio.volume = Math.max(0, Math.min(1, Number(ttsVolumeInput.value || 70) / 100));
+        audio.onended = () => URL.revokeObjectURL(url);
+        await audio.play();
+        setStatus('Áudio reproduzido com sucesso.');
+      } catch (e) {
+        setStatus(`Erro Fish Audio: ${e}`, true);
+      }
+    });
 
     function renderThemes() {
       if (!themesGrid || !window.ASTER_THEMES) return;
@@ -829,7 +1311,7 @@
               <span class="swatch" style="background:${t.accent}"></span>
               <span class="swatch" style="background:${t.accentSoft}"></span>
             </div>
-            ${loadedUiTheme === id ? '<span class="badge" style="margin-left:0">Ativo</span>' : ''}
+            ${loadedUiTheme === id ? '<span class="badge">Ativo</span>' : ''}
           </div>
           <div style="font-size:12.5px;font-weight:600;color:#f5f3ff">${t.name}</div>
           <div style="font-size:11px;color:#a1a1aa;line-height:1.35">${t.desc}</div>
@@ -845,53 +1327,13 @@
       });
     }
 
-    async function saveAll(silent = false) {
-      try {
-        await invoke('save_settings', { cfg: collectConfig() });
-        await invoke('stop_voice').catch(() => {});
-        refreshHealth();
-        if (!silent) setStatus('✓ Configurações salvas!');
-        return true;
-      } catch (e) {
-        setStatus(`Erro ao salvar: ${e}`, true);
-        return false;
-      }
-    }
-    saveBtn.addEventListener('click', () => saveAll(false));
-
-    document.getElementById('test-voice-btn').addEventListener('click', async () => {
-      setStatus('⏳ Testando voz no Fish Audio...');
-      const ok = await saveAll(true);
-      if (!ok) return;
-      try {
-        const payload = await invoke('synthesize_fish_speech', {
-          text: 'E aí Kio, teste de voz da Aster no Fish Audio.'
-        });
-        if (!payload || !payload.audio_base64) {
-          setStatus('Ative a voz e informe a Fish Audio API Key primeiro.', true);
-          return;
-        }
-        const bin = atob(payload.audio_base64);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const url = URL.createObjectURL(new Blob([bytes], { type: payload.mime }));
-        const audio = new Audio(url);
-        audio.volume = Math.max(0, Math.min(1, Number(ttsVolumeInput.value || 70) / 100));
-        audio.onended = () => URL.revokeObjectURL(url);
-        await audio.play();
-        setStatus('✓ Áudio reproduzido com sucesso!');
-      } catch (e) {
-        setStatus(`Erro Fish Audio: ${e}`, true);
-      }
-    });
-
     async function loadMemories() {
       try {
         const facts = (await invoke('memory_list')) || [];
         document.getElementById('mem-count').textContent = String(facts.length);
         memList.innerHTML = '';
         if (!facts.length) {
-          memList.innerHTML = '<div class="mem-empty">Nenhuma memória salva ainda. Adicione acima ou diga "Aster, lembra que..."</div>';
+          memList.innerHTML = '<div class="mem-empty">Nenhum fato salvo ainda. Adicione acima ou diga "Aster, lembra que...".</div>';
           return;
         }
         facts.forEach((fact, idx) => {
@@ -923,7 +1365,7 @@
       await invoke('memory_add', { fact });
       await invoke('notify_memories_updated').catch(() => {});
       loadMemories();
-      setStatus('✓ Memória adicionada!');
+      setStatus('Memória adicionada.');
     }
     document.getElementById('add-mem-btn').addEventListener('click', addMemory);
     newMemInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addMemory(); });
@@ -934,17 +1376,17 @@
         document.getElementById('doc-count').textContent = String(docs.length);
         docsList.innerHTML = '';
         if (!docs.length) {
-          docsList.innerHTML = '<div class="mem-empty">Pasta docs vazia. Clique em "Abrir pasta docs" e solte seus arquivos .txt, .md, .json ou .csv lá dentro para consulta automática.</div>';
+          docsList.innerHTML = '<div class="mem-empty">Nenhum arquivo de apoio. Clique em "Abrir pasta" e solte arquivos .txt, .md, .json ou .csv lá dentro.</div>';
           return;
         }
         docs.forEach((d) => {
           const row = document.createElement('div');
           row.className = 'mem-item';
-          row.innerHTML = `<span style="display:inline-flex;align-items:center;gap:7px"><svg class="ico ico-sm" style="color:#a78bfa" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>${d.name}</span><small class="mono" style="color:#a1a1aa">${d.size_kb} KB</small>`;
+          row.innerHTML = `<span style="display:inline-flex;align-items:center;gap:7px"><svg class="ico ico-sm" style="color:var(--accent-bright)" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>${d.name}</span><small class="mono" style="color:#a1a1aa">${d.size_kb} KB</small>`;
           docsList.appendChild(row);
         });
       } catch (e) {
-        setStatus(`Erro lendo docs/: ${e}`, true);
+        setStatus(`Erro lendo arquivos: ${e}`, true);
       }
     }
     document.getElementById('open-docs-btn').addEventListener('click', () => invoke('docs_open_folder').catch(() => {}));
@@ -966,13 +1408,14 @@
     const SKIN_EXTRAS = [
       { key: 'talk_calm', file: 'aster_talk_calm.png', label: 'Fala calma (variação)' },
       { key: 'listen',    file: 'aster_listen.png',    label: 'Escutando no microfone' },
-      { key: 'music',     file: 'aster_music.png',     label: 'Curtindo música (Spotify)' },
+      { key: 'music',     file: 'aster_music.png',     label: 'Curtindo música' },
     ];
 
     const SVG_CHECK_OK = `<svg class="ico ico-sm" style="color:#34d399" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>`;
     const SVG_CHECK_EMPTY = `<svg class="ico ico-sm" style="color:#52525b" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>`;
     const SVG_SPARKLE = `<svg class="ico ico-sm" style="color:var(--accent-bright)" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`;
     const SVG_LIST = `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>`;
+    const SVG_UPLOAD = `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`;
 
     function renderChecklistGroup(title, items, keySet) {
       const rows = items.map((it) => {
@@ -982,13 +1425,12 @@
           <span class="file-pill ${ok ? 'ok' : ''}">${it.file}</span>
         </div>`;
       }).join('');
-      return `<div style="margin-top:8px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#a78bfa;margin-bottom:5px">${title}</div><div style="display:flex;flex-direction:column;gap:4px">${rows}</div></div>`;
+      return `<div style="margin-top:8px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-bright);margin-bottom:5px">${title}</div><div style="display:flex;flex-direction:column;gap:4px">${rows}</div></div>`;
     }
 
     async function loadSkins() {
       try {
         const skins = (await invoke('skins_list')) || [];
-        document.getElementById('skin-count').textContent = String(skins.length);
         skinsList.innerHTML = '';
         skins.forEach((s) => {
           const keySet = new Set(s.present_keys || []);
@@ -997,37 +1439,79 @@
           const essDone = essCount === SKIN_ESSENTIALS.length;
 
           const card = document.createElement('div');
-          card.className = 'glass-card';
-          card.style.padding = '11px 13px';
-          card.style.gap = '9px';
+          card.className = `skin-card ${s.active ? 'is-active' : ''}`;
 
           const top = document.createElement('div');
-          top.style.display = 'flex';
-          top.style.alignItems = 'center';
-          top.style.justifyContent = 'space-between';
-          top.style.gap = '8px';
+          top.className = 'skin-top';
 
-          const info = document.createElement('div');
+          const thumbSrc = s.id === 'padrao' ? 'sprites/aster_idle.png' : (s.preview || '');
+          const thumbHtml = thumbSrc
+            ? `<div class="skin-thumb"><img src="${thumbSrc}" alt="${s.name}" /></div>`
+            : `<div class="skin-thumb" style="align-items:center">${SVG_SPARKLE}</div>`;
+
           const statusColor = essDone ? '#34d399' : '#fbbf24';
           const statusText = s.id === 'padrao'
             ? 'Visual original completo • 20 sprites'
             : `<span style="color:${statusColor};font-weight:600">${essCount}/${SKIN_ESSENTIALS.length} essenciais</span> • ${s.sprite_count} sprites${walkCount ? ` • walk ${walkCount}/8` : ''}`;
-          info.innerHTML = `<div style="display:inline-flex;align-items:center;gap:6px;font-weight:600;color:#f5f3ff">${SVG_SPARKLE}<span>${s.name}</span></div><div style="margin-top:2px"><small style="color:#a1a1aa">${statusText}</small></div>`;
 
-          const actions = document.createElement('div');
-          actions.className = 'row';
+          const meta = document.createElement('div');
+          meta.className = 'skin-meta';
+          meta.innerHTML = `${thumbHtml}<div style="min-width:0"><div class="skin-name">${s.name}</div><div class="skin-sub">${statusText}</div></div>`;
 
-          let checklistEl = null;
+          const useBtn = document.createElement('button');
+          if (s.active) {
+            useBtn.className = 'btn btn-ghost btn-sm';
+            useBtn.textContent = 'Ativa';
+            useBtn.disabled = true;
+          } else {
+            useBtn.className = 'btn btn-sm';
+            useBtn.textContent = 'Usar Skin';
+            useBtn.addEventListener('click', async () => {
+              try {
+                await invoke('skins_set_active', { skinId: s.id });
+                loadedActiveSkin = s.id;
+                setStatus(`Skin "${s.name}" ativada.`);
+                loadSkins();
+              } catch (e) {
+                setStatus(`Erro ao trocar skin: ${e}`, true);
+              }
+            });
+          }
+
+          top.append(meta, useBtn);
+          card.appendChild(top);
+
           if (s.id !== 'padrao') {
+            const footer = document.createElement('div');
+            footer.className = 'skin-footer';
+
+            const checkBtn = document.createElement('button');
+            checkBtn.className = 'btn btn-ghost btn-sm';
+            checkBtn.innerHTML = `${SVG_LIST}<span>Checklist</span>`;
+
             const importBtn = document.createElement('button');
-            importBtn.className = 'btn btn-ghost';
-            importBtn.style.padding = '6px 10px';
-            importBtn.style.fontSize = '11.5px';
-            importBtn.innerHTML = `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg><span>Importar (Beta)</span>`;
+            importBtn.className = 'btn btn-ghost btn-sm';
+            importBtn.innerHTML = `${SVG_UPLOAD}<span>Importar (Beta)</span>`;
+
+            const checklistEl = document.createElement('div');
+            checklistEl.className = 'skin-checklist';
+            checklistEl.innerHTML =
+              renderChecklistGroup('Essenciais (mínimo para ficar completa)', SKIN_ESSENTIALS, keySet) +
+              renderChecklistGroup('Expressões recomendadas', SKIN_EXPRESSIONS, keySet) +
+              renderChecklistGroup('Extras opcionais', SKIN_EXTRAS, keySet) +
+              `<div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:${walkCount === 8 ? '#e4e4e7' : '#a1a1aa'}">
+                <span style="display:inline-flex;align-items:center;gap:6px">${walkCount === 8 ? SVG_CHECK_OK : SVG_CHECK_EMPTY} Caminhada (walk ${walkCount}/8 frames)</span>
+                <span class="file-pill ${walkCount === 8 ? 'ok' : ''}">aster_walk_1..8.png</span>
+              </div>`;
+
+            checkBtn.addEventListener('click', () => {
+              checklistEl.style.display = checklistEl.style.display === 'block' ? 'none' : 'block';
+            });
+
             importBtn.addEventListener('click', async () => {
               importBtn.disabled = true;
               const addOutline = Boolean(document.getElementById('import-outline-cb')?.checked);
-              setStatus(`Processando sprites para "${s.name}" (isnet-anime)...`);
+              setStatus(`Processando sprites para "${s.name}"...`);
               try {
                 const msg = await invoke('skins_import_folder', { skinId: s.id, addOutline });
                 setStatus(msg);
@@ -1041,59 +1525,15 @@
                 importBtn.disabled = false;
               }
             });
-            actions.appendChild(importBtn);
 
-            const checkBtn = document.createElement('button');
-            checkBtn.className = 'btn btn-ghost';
-            checkBtn.style.padding = '6px 10px';
-            checkBtn.style.fontSize = '11.5px';
-            checkBtn.innerHTML = `${SVG_LIST}<span>Checklist</span>`;
-            checklistEl = document.createElement('div');
-            checklistEl.style.display = 'none';
-            checklistEl.style.borderTop = '1px solid rgba(167,139,250,0.16)';
-            checklistEl.style.paddingTop = '6px';
-            checklistEl.innerHTML =
-              renderChecklistGroup('Essenciais (mínimo para ficar completa)', SKIN_ESSENTIALS, keySet) +
-              renderChecklistGroup('Expressões recomendadas', SKIN_EXPRESSIONS, keySet) +
-              renderChecklistGroup('Extras opcionais', SKIN_EXTRAS, keySet) +
-              `<div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:${walkCount === 8 ? '#e4e4e7' : '#a1a1aa'}">
-                <span style="display:inline-flex;align-items:center;gap:6px">${walkCount === 8 ? SVG_CHECK_OK : SVG_CHECK_EMPTY} Caminhada (walk ${walkCount}/8 frames)</span>
-                <span class="file-pill ${walkCount === 8 ? 'ok' : ''}">aster_walk_1..8.png</span>
-              </div>`;
-            checkBtn.addEventListener('click', () => {
-              checklistEl.style.display = checklistEl.style.display === 'none' ? 'block' : 'none';
-            });
-            actions.appendChild(checkBtn);
+            footer.append(checkBtn, importBtn);
+            card.append(footer, checklistEl);
           }
 
-          const btn = document.createElement('button');
-          if (s.active) {
-            btn.className = 'btn btn-ghost';
-            btn.textContent = 'Ativa';
-            btn.disabled = true;
-            btn.style.opacity = '0.8';
-          } else {
-            btn.className = 'btn';
-            btn.textContent = 'Usar Skin';
-            btn.addEventListener('click', async () => {
-              try {
-                await invoke('skins_set_active', { skinId: s.id });
-                loadedActiveSkin = s.id;
-                setStatus(`Skin "${s.name}" ativada.`);
-                loadSkins();
-              } catch (e) {
-                setStatus(`Erro ao trocar skin: ${e}`, true);
-              }
-            });
-          }
-          actions.appendChild(btn);
-          top.append(info, actions);
-          card.appendChild(top);
-          if (checklistEl) card.appendChild(checklistEl);
           skinsList.appendChild(card);
         });
       } catch (e) {
-        setStatus(`Erro lendo skins/: ${e}`, true);
+        setStatus(`Erro lendo skins: ${e}`, true);
       }
     }
 
@@ -1104,7 +1544,7 @@
       try {
         const slug = await invoke('skins_create', { name });
         newSkinInput.value = '';
-        setStatus(`Pasta skins/${slug}/ criada com guia. Abra o Checklist para acompanhar.`);
+        setStatus(`Pasta skins/${slug} criada. Abra o Checklist para acompanhar.`);
         loadSkins();
       } catch (e) {
         setStatus(`Erro criando skin: ${e}`, true);
@@ -1115,11 +1555,89 @@
     document.getElementById('open-skins-btn').addEventListener('click', () => invoke('skins_open_folder').catch(() => {}));
     document.getElementById('refresh-skins-btn').addEventListener('click', loadSkins);
 
+    // Painel ao vivo de Pomodoro & Lembretes
+    const remListEl = document.getElementById('rem-list');
+    const remCountEl = document.getElementById('rem-count');
+    let cachedReminders = [];
+
+    function formatCountdown(ms) {
+      const sec = Math.max(0, Math.ceil(ms / 1000));
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      const pad = (n) => String(n).padStart(2, '0');
+      return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+    }
+
+    function renderReminders() {
+      if (!remListEl) return;
+      const now = Date.now();
+      const alive = cachedReminders.filter((r) => r.fireAt > now);
+      remCountEl.textContent = String(alive.length);
+      remListEl.innerHTML = '';
+      if (!alive.length) {
+        remListEl.innerHTML = '<div class="mem-empty">Nenhum timer ou Pomodoro ativo agora.</div>';
+        return;
+      }
+      alive.forEach((r) => {
+        const row = document.createElement('div');
+        row.className = 'mem-item';
+        const left = document.createElement('div');
+        left.innerHTML = `<div style="font-weight:600;color:#f5f3ff">${r.label}</div><small class="mono" style="color:var(--accent-soft)">${formatCountdown(r.fireAt - now)} restantes</small>`;
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-danger';
+        cancelBtn.textContent = 'Cancelar';
+        cancelBtn.addEventListener('click', () => {
+          invoke('reminders_send_action', { payload: { action: 'cancel', id: r.id } }).catch(() => {});
+        });
+        row.append(left, cancelBtn);
+        remListEl.appendChild(row);
+      });
+    }
+
+    function requestRemindersList() {
+      invoke?.('reminders_send_action', { payload: { action: 'list' } })?.catch(() => {});
+    }
+
+    tauriEvent?.listen?.('aster-reminders-list', (ev) => {
+      cachedReminders = Array.isArray(ev?.payload) ? ev.payload : [];
+      renderReminders();
+    });
+    setInterval(() => {
+      if (cachedReminders.length) renderReminders();
+    }, 1000);
+
+    document.getElementById('pomo-25-btn').addEventListener('click', () => {
+      invoke('reminders_send_action', { payload: { action: 'pomodoro', focus: 25, brk: 5 } }).catch(() => {});
+      setStatus('Pomodoro 25/5 iniciado.');
+    });
+    document.getElementById('pomo-50-btn').addEventListener('click', () => {
+      invoke('reminders_send_action', { payload: { action: 'pomodoro', focus: 50, brk: 10 } }).catch(() => {});
+      setStatus('Pomodoro 50/10 iniciado.');
+    });
+    document.getElementById('rem-clear-btn').addEventListener('click', () => {
+      invoke('reminders_send_action', { payload: { action: 'cancel_all' } }).catch(() => {});
+      setStatus('Todos os timers cancelados.');
+    });
+    document.getElementById('rem-add-btn').addEventListener('click', () => {
+      const mins = Number(String(document.getElementById('rem-mins-input').value || '').replace(',', '.'));
+      const label = document.getElementById('rem-label-input').value.trim();
+      if (!Number.isFinite(mins) || mins <= 0) {
+        setStatus('Informe os minutos (ex: 15).', true);
+        return;
+      }
+      invoke('reminders_send_action', { payload: { action: 'add', minutes: mins, label } }).catch(() => {});
+      document.getElementById('rem-mins-input').value = '';
+      document.getElementById('rem-label-input').value = '';
+      setStatus(`Lembrete agendado para daqui a ${mins} min.`);
+    });
+
     loadSettings();
     loadMemories();
     loadDocs();
     loadSkins();
     refreshHealth();
+    requestRemindersList();
   </script>
 </body>
 </html>

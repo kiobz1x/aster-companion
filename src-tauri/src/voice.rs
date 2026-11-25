@@ -263,6 +263,8 @@ pub async fn synthesize_fish_speech(
         "text": clean,
         "format": "mp3",
         "mp3_bitrate": 64,
+        "chunk_length": 150,
+        "normalize": false,
         "latency": "low"
     });
     if !cfg.fish_voice_id.is_empty() {

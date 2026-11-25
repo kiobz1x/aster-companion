@@ -114,6 +114,119 @@ fn strip_think_tags(input: &str) -> String {
     out.trim().to_string()
 }
 
+fn is_gemini_thinking_model(cfg: &AppConfig) -> bool {
+    cfg.cloud_url.contains("generativelanguage.googleapis.com")
+        || cfg.cloud_model.to_lowercase().contains("gemini-2.5")
+}
+
+async fn chat_cloud_once(
+    cfg: &AppConfig,
+    messages: &[ChatMessage],
+    temperature: f32,
+) -> Result<String, String> {
+    let mut payload = json!({
+        "model": cfg.cloud_model,
+        "messages": messages,
+        "stream": false,
+        "temperature": temperature
+    });
+    if is_gemini_thinking_model(cfg) {
+        payload["reasoning_effort"] = json!("none");
+    }
+
+    let res = external_http()
+        .post(&cfg.cloud_url)
+        .header("Authorization", format!("Bearer {}", cfg.cloud_api_key))
+        .timeout(Duration::from_secs(45))
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|e| format!("Erro conectando na API Cloud: {e}"))?;
+
+    if !res.status().is_success() {
+        let st = res.status();
+        let body = res.text().await.unwrap_or_default();
+        return Err(format!("Cloud HTTP {st}: {}", body.chars().take(120).collect::<String>()));
+    }
+
+    let body: serde_json::Value = res
+        .json()
+        .await
+        .map_err(|e| format!("Resposta inválida da API Cloud: {e}"))?;
+
+    let content = body["choices"][0]["message"]["content"]
+        .as_str()
+        .unwrap_or("");
+    Ok(strip_think_tags(content))
+}
+
+async fn chat_cloud_stream(
+    app: &tauri::AppHandle,
+    cfg: &AppConfig,
+    messages: &[ChatMessage],
+    temperature: f32,
+) -> Result<String, String> {
+    let mut payload = json!({
+        "model": cfg.cloud_model,
+        "messages": messages,
+        "stream": true,
+        "temperature": temperature
+    });
+    if is_gemini_thinking_model(cfg) {
+        payload["reasoning_effort"] = json!("none");
+    }
+
+    let mut res = external_http()
+        .post(&cfg.cloud_url)
+        .header("Authorization", format!("Bearer {}", cfg.cloud_api_key))
+        .timeout(Duration::from_secs(60))
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|e| format!("Erro conectando na API Cloud: {e}"))?;
+
+    if !res.status().is_success() {
+        let st = res.status();
+        let body = res.text().await.unwrap_or_default();
+        return Err(format!("Cloud HTTP {st}: {}", body.chars().take(120).collect::<String>()));
+    }
+
+    let main_win = app.get_webview_window("main");
+    let mut full = String::new();
+    let mut line_buf = String::new();
+
+    while let Some(chunk) = res
+        .chunk()
+        .await
+        .map_err(|e| format!("Erro lendo stream Cloud: {e}"))?
+    {
+        line_buf.push_str(&String::from_utf8_lossy(&chunk));
+        while let Some(nl) = line_buf.find('\n') {
+            let raw_line = line_buf[..nl].trim().to_string();
+            line_buf.drain(..=nl);
+            let Some(data) = raw_line.strip_prefix("data:") else {
+                continue;
+            };
+            let data = data.trim();
+            if data.is_empty() || data == "[DONE]" {
+                continue;
+            }
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
+                if let Some(piece) = v["choices"][0]["delta"]["content"].as_str() {
+                    if !piece.is_empty() {
+                        full.push_str(piece);
+                        if let Some(win) = &main_win {
+                            let _ = win.emit("ollama-chunk", piece);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(strip_think_tags(&full))
+}
+
 #[tauri::command]
 pub async fn chat_ollama(
     messages: Vec<ChatMessage>,
@@ -121,6 +234,18 @@ pub async fn chat_ollama(
     num_ctx: Option<u32>,
 ) -> Result<String, String> {
     let cfg = AppConfig::load();
+    let temp = temperature.unwrap_or(0.7);
+    if cfg.ai_provider.eq_ignore_ascii_case("cloud")
+        && !cfg.cloud_api_key.is_empty()
+        && !cfg.cloud_url.is_empty()
+    {
+        if let Ok(reply) = chat_cloud_once(&cfg, &messages, temp).await {
+            if !reply.is_empty() {
+                return Ok(reply);
+            }
+        }
+    }
+
     let client = local_http();
 
     let payload = json!({
@@ -129,8 +254,8 @@ pub async fn chat_ollama(
         "stream": false,
         "think": false,
         "options": {
-            "temperature": temperature.unwrap_or(0.7),
-            "num_ctx": num_ctx.unwrap_or(2048)
+            "temperature": temp,
+            "num_ctx": num_ctx.unwrap_or(4096)
         }
     });
 
@@ -171,6 +296,19 @@ pub async fn chat_ollama_stream(
     num_ctx: Option<u32>,
 ) -> Result<String, String> {
     let cfg = AppConfig::load();
+    let temp = temperature.unwrap_or(0.7);
+
+    // Modo Nuvem com fallback automático para Ollama local se a API falhar
+    if cfg.ai_provider.eq_ignore_ascii_case("cloud")
+        && !cfg.cloud_api_key.is_empty()
+        && !cfg.cloud_url.is_empty()
+    {
+        match chat_cloud_stream(&app, &cfg, &messages, temp).await {
+            Ok(reply) if !reply.is_empty() => return Ok(reply),
+            _ => {}
+        }
+    }
+
     let client = local_http();
 
     let payload = json!({
@@ -179,8 +317,8 @@ pub async fn chat_ollama_stream(
         "stream": true,
         "think": false,
         "options": {
-            "temperature": temperature.unwrap_or(0.7),
-            "num_ctx": num_ctx.unwrap_or(2048)
+            "temperature": temp,
+            "num_ctx": num_ctx.unwrap_or(4096)
         }
     });
 
@@ -338,6 +476,56 @@ pub async fn ask_ollama_vision(prompt: String, system_prompt: String) -> Result<
         let img_b64 = tauri::async_runtime::spawn_blocking(capture_screen_base64)
             .await
             .map_err(|e| format!("Erro na thread de screenshot: {e}"))??;
+
+        // Se estiver no modo Nuvem, tenta enviar o print direto pro modelo multimodal da nuvem
+        if cfg.ai_provider.eq_ignore_ascii_case("cloud")
+            && !cfg.cloud_api_key.is_empty()
+            && !cfg.cloud_url.is_empty()
+        {
+            let mut cloud_payload = json!({
+                "model": cfg.cloud_model,
+                "stream": false,
+                "temperature": 0.6,
+                "messages": [
+                    { "role": "system", "content": system_prompt },
+                    {
+                        "role": "user",
+                        "content": [
+                            { "type": "text", "text": prompt },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": format!("data:image/jpeg;base64,{img_b64}")
+                                }
+                            }
+                        ]
+                    }
+                ]
+            });
+            if is_gemini_thinking_model(&cfg) {
+                cloud_payload["reasoning_effort"] = json!("none");
+            }
+
+            if let Ok(res) = external_http()
+                .post(&cfg.cloud_url)
+                .header("Authorization", format!("Bearer {}", cfg.cloud_api_key))
+                .timeout(Duration::from_secs(60))
+                .json(&cloud_payload)
+                .send()
+                .await
+            {
+                if res.status().is_success() {
+                    if let Ok(body) = res.json::<serde_json::Value>().await {
+                        if let Some(content) = body["choices"][0]["message"]["content"].as_str() {
+                            let cleaned = strip_think_tags(content);
+                            if !cleaned.is_empty() {
+                                return Ok(cleaned);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         let client = local_http();
 
@@ -501,6 +689,8 @@ pub struct ServiceHealth {
     pub ollama_ok: bool,
     pub hermes_ok: bool,
     pub fish_configured: bool,
+    pub cloud_configured: bool,
+    pub ai_provider: String,
 }
 
 #[tauri::command]
@@ -545,6 +735,58 @@ pub async fn list_ollama_models() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
+pub async fn test_ai_connection() -> Result<String, String> {
+    let cfg = AppConfig::load();
+    let started = std::time::Instant::now();
+    let test_msgs = vec![ChatMessage {
+        role: "user".to_string(),
+        content: "Responda apenas: OK".to_string(),
+    }];
+
+    if cfg.ai_provider.eq_ignore_ascii_case("cloud") {
+        if cfg.cloud_api_key.is_empty() || cfg.cloud_url.is_empty() {
+            return Err("Informe a URL e a API Key da nuvem primeiro.".into());
+        }
+        let reply = chat_cloud_once(&cfg, &test_msgs, 0.1).await?;
+        let ms = started.elapsed().as_millis();
+        return Ok(format!(
+            "Cloud OK ({}) em {}ms — \"{}\"",
+            cfg.cloud_model,
+            ms,
+            reply.chars().take(30).collect::<String>()
+        ));
+    }
+
+    let payload = json!({
+        "model": cfg.ollama_model,
+        "messages": test_msgs,
+        "stream": false,
+        "think": false,
+        "options": { "temperature": 0.1, "num_ctx": 512 }
+    });
+    let res = local_http()
+        .post(&cfg.ollama_url)
+        .timeout(Duration::from_secs(20))
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|e| format!("Ollama inacessível: {e}"))?;
+
+    if !res.status().is_success() {
+        return Err(format!("Ollama HTTP {}", res.status()));
+    }
+    let body: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    let reply = strip_think_tags(body["message"]["content"].as_str().unwrap_or("OK"));
+    let ms = started.elapsed().as_millis();
+    Ok(format!(
+        "Ollama OK ({}) em {}ms — \"{}\"",
+        cfg.ollama_model,
+        ms,
+        reply.chars().take(30).collect::<String>()
+    ))
+}
+
+#[tauri::command]
 pub async fn check_services_health() -> ServiceHealth {
     let cfg = AppConfig::load();
     let client = local_http();
@@ -575,5 +817,7 @@ pub async fn check_services_health() -> ServiceHealth {
         ollama_ok: o_res.map(|r| r.status().is_success()).unwrap_or(false),
         hermes_ok: h_res.map(|r| r.status().is_success()).unwrap_or(false),
         fish_configured: cfg.tts_enabled == "1" && !cfg.fish_api_key.is_empty(),
+        cloud_configured: !cfg.cloud_api_key.is_empty() && !cfg.cloud_url.is_empty(),
+        ai_provider: cfg.ai_provider,
     }
 }

@@ -2,6 +2,7 @@ mod actions;
 mod brain;
 mod config;
 mod docs;
+mod games;
 mod media;
 mod memory;
 mod skins;
@@ -687,8 +688,9 @@ fn open_settings_window_inner(app: &tauri::AppHandle) {
     }
     let _ = WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("settings.html".into()))
         .title("Aster • Configurações")
-        .inner_size(680.0, 560.0)
-        .resizable(false)
+        .inner_size(760.0, 600.0)
+        .resizable(true)
+        .min_inner_size(700.0, 540.0)
         .additional_browser_args("--autoplay-policy=no-user-gesture-required")
         .center()
         .build();
@@ -703,6 +705,20 @@ async fn open_settings(app: tauri::AppHandle) {
 fn notify_memories_updated(app: tauri::AppHandle) {
     if let Some(win) = app.get_webview_window("main") {
         let _ = win.emit("aster-memories-updated", ());
+    }
+}
+
+#[tauri::command]
+fn reminders_send_action(app: tauri::AppHandle, payload: serde_json::Value) {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.emit("aster-reminder-action", payload);
+    }
+}
+
+#[tauri::command]
+fn reminders_broadcast_list(app: tauri::AppHandle, list: serde_json::Value) {
+    if let Some(win) = app.get_webview_window("settings") {
+        let _ = win.emit("aster-reminders-list", list);
     }
 }
 
@@ -936,6 +952,8 @@ pub fn run() {
             get_active_window_context,
             open_settings,
             notify_memories_updated,
+            reminders_send_action,
+            reminders_broadcast_list,
             config::get_settings,
             config::save_settings,
             docs::docs_list,
@@ -945,6 +963,7 @@ pub fn run() {
             brain::chat_ollama_stream,
             brain::ask_ollama_vision,
             brain::list_ollama_models,
+            brain::test_ai_connection,
             brain::ask_hermes,
             brain::post_discord_webhook,
             brain::read_clipboard,
@@ -970,6 +989,8 @@ pub fn run() {
             skins::skins_import_folder,
             skins::skins_open_folder,
             media::get_now_playing,
+            games::get_lol_state,
+            games::detect_known_game,
         ])
         .build(tauri::generate_context!())
         .expect("erro ao construir Aster Companion");

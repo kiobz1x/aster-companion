@@ -74,19 +74,20 @@ function preloadSprites() {
 }
 
 let currentSkinId = 'padrao';
+let userName = '';
 let nowPlaying = { playing: false, title: '', artist: '', app: '' };
 let lastTrackKey = '';
 let lastMusicCommentAt = 0;
+let lolEnabled = true;
+let lolState = { in_game: false, summoner: '', champion: '', kills: 0, deaths: 0, assists: 0 };
+let activeGameName = '';
+let announcedGames = new Set();
+let lastLolEventId = -1;
+let lastLolCommentAt = 0;
 let activeSkinBlobUrls = [];
+let skinLoadSeq = 0;
 
-function revokeSkinBlobUrls() {
-  for (const url of activeSkinBlobUrls) {
-    try { URL.revokeObjectURL(url); } catch (_) {}
-  }
-  activeSkinBlobUrls = [];
-}
-
-function dataUriToBlobUrl(dataUri) {
+function dataUriToBlobUrl(dataUri, bucket) {
   if (!dataUri || !dataUri.startsWith('data:')) return dataUri;
   const comma = dataUri.indexOf(',');
   if (comma === -1) return dataUri;
@@ -96,66 +97,102 @@ function dataUriToBlobUrl(dataUri) {
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
-  activeSkinBlobUrls.push(url);
+  bucket.push(url);
   return url;
 }
 
 async function applySkin(skinId) {
-  revokeSkinBlobUrls();
-  Object.assign(SPRITES, DEFAULT_SPRITES);
+  const seq = ++skinLoadSeq;
+  const newBlobs = [];
+  const nextSprites = { ...DEFAULT_SPRITES };
+
   if (invoke) {
     try {
+      let targetSkin = currentSkinId;
       if (typeof skinId === 'string' && skinId.trim()) {
-        currentSkinId = skinId.trim();
+        targetSkin = skinId.trim();
       } else {
         const cfg = await invoke('get_settings').catch(() => null);
-        currentSkinId = (cfg?.active_skin || 'padrao').trim();
+        targetSkin = (cfg?.active_skin || 'padrao').trim();
       }
-      const rawOverrides = (await invoke('skins_get_overrides', { skinId: currentSkinId || null })) || {};
+      const rawOverrides = (await invoke('skins_get_overrides', { skinId: targetSkin || null })) || {};
+      // Se outra chamada mais recente começou durante o await, aborta esta sem revogar nada
+      if (seq !== skinLoadSeq) return;
+      currentSkinId = targetSkin;
+
       const overrides = {};
       for (const [key, dataUri] of Object.entries(rawOverrides)) {
-        if (key in SPRITES && dataUri) {
-          const blobUrl = dataUriToBlobUrl(dataUri);
+        if (key in nextSprites && dataUri) {
+          const blobUrl = dataUriToBlobUrl(dataUri, newBlobs);
           overrides[key] = blobUrl;
-          SPRITES[key] = blobUrl;
+          nextSprites[key] = blobUrl;
         }
       }
       const hasAny = Object.keys(overrides).length > 0;
-      // Fallback inteligente dentro da própria skin: com os 6 essenciais nunca volta pro visual padrão
       if (hasAny) {
         const skinBase = overrides.idle || Object.values(overrides)[0];
-        if (!overrides.talk && overrides.talk_calm) SPRITES.talk = overrides.talk_calm;
-        if (!overrides.talk_calm && overrides.talk) SPRITES.talk_calm = overrides.talk;
+        if (!overrides.talk && overrides.talk_calm) nextSprites.talk = overrides.talk_calm;
+        if (!overrides.talk_calm && overrides.talk) nextSprites.talk_calm = overrides.talk;
         if (!overrides.talk && !overrides.talk_calm) {
-          SPRITES.talk = skinBase;
-          SPRITES.talk_calm = skinBase;
+          nextSprites.talk = skinBase;
+          nextSprites.talk_calm = skinBase;
         }
-        if (!overrides.listen) SPRITES.listen = overrides.think || skinBase;
-        if (!overrides.sleepy) SPRITES.sleepy = overrides.blink || skinBase;
-        if (!overrides.blink) SPRITES.blink = overrides.sleepy || skinBase;
-        if (!overrides.smug) SPRITES.smug = skinBase;
-        if (!overrides.angry) SPRITES.angry = skinBase;
-        if (!overrides.music) SPRITES.music = overrides.smug || skinBase;
-        if (!overrides.think) SPRITES.think = skinBase;
-        if (!overrides.drag) SPRITES.drag = skinBase;
-        if (!overrides.sit) SPRITES.sit = skinBase;
+        if (!overrides.listen) nextSprites.listen = overrides.think || skinBase;
+        if (!overrides.sleepy) nextSprites.sleepy = overrides.blink || skinBase;
+        if (!overrides.blink) nextSprites.blink = overrides.sleepy || skinBase;
+        if (!overrides.smug) nextSprites.smug = skinBase;
+        if (!overrides.angry) nextSprites.angry = skinBase;
+        if (!overrides.music) nextSprites.music = overrides.smug || skinBase;
+        if (!overrides.think) nextSprites.think = skinBase;
+        if (!overrides.drag) nextSprites.drag = skinBase;
+        if (!overrides.sit) nextSprites.sit = skinBase;
       }
     } catch (e) {
       console.warn('[applySkin]', e);
     }
   }
+
+  if (seq !== skinLoadSeq) {
+    newBlobs.forEach((u) => { try { URL.revokeObjectURL(u); } catch (_) {} });
+    return;
+  }
+
+  const oldBlobs = activeSkinBlobUrls;
+  activeSkinBlobUrls = newBlobs;
+  Object.assign(SPRITES, nextSprites);
   rebuildWalkFrames();
   preloadSprites();
   if (sprite && !isWalking) {
     sprite.src = SPRITES[currentMood] || SPRITES.idle;
   }
+  // Só revoga os Blob URLs antigos depois que o DOM já aponta pros novos
+  setTimeout(() => {
+    oldBlobs.forEach((u) => { try { URL.revokeObjectURL(u); } catch (_) {} });
+  }, 1500);
 }
 
 preloadSprites();
 
-const ASTER_SYSTEM = `Você é Aster, assistente pessoal de desktop do Kio no Windows 11.
-Você TEM controle total do PC do Kio através das tags de ação abaixo. Nunca diga que não consegue fazer algo no PC.
-Personalidade: direta, humor seco, informal em PT-BR e respostas curtas (1 a 2 frases).
+function ownerLabel() {
+  return userName || 'usuário';
+}
+
+function ownerOf() {
+  return userName ? `de ${userName}` : 'do usuário';
+}
+
+function vocative(prefix = ', ') {
+  return userName ? `${prefix}${userName}` : '';
+}
+
+function buildBaseSystemPrompt() {
+  const nameHint = userName
+    ? `Chame a pessoa de "${userName}" naturalmente quando fizer sentido.`
+    : 'Não invente um nome para a pessoa; trate-a de forma natural em segunda pessoa ("você").';
+  const sampleUser = userName || 'Usuário';
+  return `Você é Aster, assistente pessoal de desktop ${ownerOf()} no Windows 11.
+Você TEM controle total do PC ${ownerOf()} através das tags de ação abaixo. Nunca diga que não consegue fazer algo no PC.
+Personalidade: direta, humor seco, informal em PT-BR e respostas curtas (1 a 2 frases). ${nameHint}
 
 Toda resposta DEVE começar com [MOOD: idle], [MOOD: smug] ou [MOOD: angry].
 
@@ -166,14 +203,15 @@ Tags disponíveis:
 - [WPP: contato | mensagem] -> envia mensagem no WhatsApp
 - [DISCORD_DM: usuario | mensagem] -> envia DM no Discord
 - [MEDIA: playpause], [MEDIA: next], [MEDIA: prev], [MEDIA: mute], [MEDIA: volup], [MEDIA: voldown] -> controla reprodução e volume
-- [REMEMBER: fato curto] -> salva um fato útil e duradouro sobre o Kio na memória persistente (só use quando ele contar uma preferência, apelido de contato ou projeto importante)
-- [DELEGATE: tarefa] -> use APENAS se o Kio pedir programação complexa, leitura de arquivos ou pesquisa profunda na web (delegação para o Hermes).
+- [REMEMBER: fato curto] -> salva um fato útil e duradouro sobre ${ownerLabel()} na memória persistente (só use quando contar uma preferência, apelido de contato ou projeto importante)
+- [DELEGATE: tarefa] -> use APENAS se pedir programação complexa, leitura de arquivos ou pesquisa profunda na web (delegação para o Hermes).
 
 Exemplos de como responder:
-Kio: "tá muito alto isso aí" -> [MOOD: idle] [MEDIA: mute] Mutado.
-Kio: "bota um linkin park pra tocar" -> [MOOD: smug] [SPOTIFY_PLAY: Linkin Park] Colocando Linkin Park.
-Kio: "pausa o som" -> [MOOD: idle] [MEDIA: playpause] Pausado.
-Kio: "pesquisa no youtube como configurar docker" -> [MOOD: idle] [OPEN_URL: https://www.youtube.com/results?search_query=como+configurar+docker] Abrindo a busca no YouTube.`;
+${sampleUser}: "tá muito alto isso aí" -> [MOOD: idle] [MEDIA: mute] Mutado.
+${sampleUser}: "bota um linkin park pra tocar" -> [MOOD: smug] [SPOTIFY_PLAY: Linkin Park] Colocando Linkin Park.
+${sampleUser}: "pausa o som" -> [MOOD: idle] [MEDIA: playpause] Pausado.
+${sampleUser}: "pesquisa no youtube como configurar docker" -> [MOOD: idle] [OPEN_URL: https://www.youtube.com/results?search_query=como+configurar+docker] Abrindo a busca no YouTube.`;
+}
 
 const HERMES_DIRECT_REGEX = /(?:pede|pe[çc]a|fala|manda|passa|delega|chama)\s+(?:pro|para\s+o|pra|para)\s+(?:o\s+)?hermes\b(?:\s+(?:pra|para)\s+)?(.*)/i;
 const HERMES_TRIGGERS = /\b(audita|auditar|pesquisa na web|pesquisar na web|refatora|refatorar|cria um projeto|script complexo)\b/i;
@@ -181,22 +219,27 @@ const DISCORD_WEBHOOK_REGEX = /(?:posta|postar|publica|publicar|manda|mandar|env
 const VISION_TRIGGER_REGEX = /^(?:\/ver|\/tela)\b(.*)|(?:\b(?:olha|olhe|v[êe]|veja|analisa|analise|l[êe]|leia|me\s+ajuda\s+com|o\s+que\s+(?:t[áa]|est[áa]|tem|voc[êe]\s+(?:v[êe]|acha\s+d(?:isso|esse|essa))))\b.*\b(?:minha\s+tela|na\s+tela|essa\s+tela|da\s+tela|aqui\s+na\s+tela)\b)/i;
 
 let savedMemories = [];
-let history = [{ role: 'system', content: ASTER_SYSTEM }];
+let history = [{ role: 'system', content: buildBaseSystemPrompt() }];
 
 function buildSystemPrompt() {
-  let prompt = ASTER_SYSTEM;
+  let prompt = buildBaseSystemPrompt();
   if (currentSkinId && currentSkinId !== 'padrao') {
-    prompt += `\n\n[Visual atual: você está vestindo a skin "${currentSkinId}". Se o Kio perguntar qual roupa ou skin você está usando, responda naturalmente no personagem sobre ela.]`;
+    prompt += `\n\n[Visual atual: você está vestindo a skin "${currentSkinId}". Se perguntarem qual roupa ou skin você está usando, responda naturalmente no personagem sobre ela.]`;
   } else {
     prompt += `\n\n[Visual atual: você está usando seu visual padrão (suéter escuro casual/gótico).]`;
   }
   if (nowPlaying.playing && (nowPlaying.title || nowPlaying.artist)) {
     const faixa = nowPlaying.artist ? `"${nowPlaying.title}" de ${nowPlaying.artist}` : `"${nowPlaying.title}"`;
-    prompt += `\n[Música tocando agora no PC do Kio: ${faixa}. Se ele perguntar o que tá tocando ou comentar sobre a música, use essa informação real.]`;
+    prompt += `\n[Música tocando agora no PC ${ownerOf()}: ${faixa}. Se perguntarem o que tá tocando ou comentarem sobre a música, use essa informação real.]`;
+  }
+  if (lolEnabled && lolState.in_game && lolState.champion) {
+    prompt += `\n[Partida de League of Legends ativa: ${ownerLabel()} está jogando de ${lolState.champion} com KDA ${lolState.kills}/${lolState.deaths}/${lolState.assists}.]`;
+  } else if (lolEnabled && activeGameName) {
+    prompt += `\n[Jogo ativo agora no PC ${ownerOf()}: ${activeGameName}.]`;
   }
   if (!savedMemories.length) return prompt;
   const list = savedMemories.map((f, i) => `${i + 1}. ${f}`).join('\n');
-  return `${prompt}\n\n[Memórias salvas — SEMPRE use estes dados reais ao preencher tags como [SPOTIFY_PLAY: ...], [WPP: ...] ou [DISCORD_DM: ...], inclusive quando o Kio pedir "sua/minha música favorita" ou usar apelidos]:\n${list}`;
+  return `${prompt}\n\n[Memórias salvas — SEMPRE use estes dados reais ao preencher tags como [SPOTIFY_PLAY: ...], [WPP: ...] ou [DISCORD_DM: ...], inclusive quando pedir "sua/minha música favorita" ou usar apelidos]:\n${list}`;
 }
 
 async function refreshMemories() {
@@ -295,6 +338,16 @@ async function refreshTtsVolume() {
     }
     particlesEnabled = cfg?.particles_enabled !== '0';
     if (!particlesEnabled && ambientLayer) ambientLayer.innerHTML = '';
+    const scalePct = Number(cfg?.sprite_scale ?? 100);
+    if (Number.isFinite(scalePct)) {
+      document.documentElement.style.setProperty('--sprite-scale', String(Math.max(0.75, Math.min(1.3, scalePct / 100))));
+    }
+    lolEnabled = cfg?.lol_enabled !== '0';
+    userName = (cfg?.user_name || '').trim();
+    history[0] = { role: 'system', content: buildSystemPrompt() };
+    if (userName && speechText && speechText.innerText === 'Tô na área. Clica em mim ou aperta Alt+A pra conversar.') {
+      speechText.innerText = `Tô na área, ${userName}. Clica em mim ou aperta Alt+A pra conversar.`;
+    }
   } catch (_) {}
 }
 
@@ -456,6 +509,7 @@ function triggerBounce() {
 function setMood(mood) {
   const effectiveMood = (perchedHwnd !== null && mood !== 'drag') ? 'sit' : mood;
   currentMood = SPRITES[effectiveMood] ? effectiveMood : 'idle';
+  wrapper.classList.toggle('music-groove', currentMood === 'music' && !isWalking && !isDragging);
   if (!isWalking) {
     sprite.src = SPRITES[currentMood];
   }
@@ -880,14 +934,16 @@ window.addEventListener('mousemove', (e) => {
 });
 
 // Headpat e partículas de carinho
-const HEADPAT_LINES = [
-  { mood: 'angry', text: 'Ei, vai bagunçar meu cabelo.' },
-  { mood: 'smug',  text: 'Tô fingindo que não gostei.' },
-  { mood: 'angry', text: 'Mais um carinho e eu muto seu Spotify.' },
-  { mood: 'smug',  text: 'Tá carente hoje, Kio?' },
-  { mood: 'music', text: 'Hmph... tá, mais dois segundos.' },
-  { mood: 'smug',  text: 'Não me trata como bicho de estimação... mas continua.' },
-];
+function getHeadpatLines() {
+  return [
+    { mood: 'angry', text: 'Ei, vai bagunçar meu cabelo.' },
+    { mood: 'smug',  text: 'Tô fingindo que não gostei.' },
+    { mood: 'angry', text: 'Mais um carinho e eu muto seu Spotify.' },
+    { mood: 'smug',  text: `Tá carente hoje${vocative()}?` },
+    { mood: 'music', text: 'Hmph... tá, mais dois segundos.' },
+    { mood: 'smug',  text: 'Não me trata como bicho de estimação... mas continua.' },
+  ];
+}
 
 let patAccum = 0;
 let patLastX = null;
@@ -929,7 +985,8 @@ function triggerHeadpat() {
   triggerBounce();
   spawnPatParticles();
 
-  const pick = HEADPAT_LINES[Math.floor(Math.random() * HEADPAT_LINES.length)];
+  const lines = getHeadpatLines();
+  const pick = lines[Math.floor(Math.random() * lines.length)];
   setMood(pick.mood);
   showBubble(pick.text, 4500);
   if (spontaneousEnabled) speakVoice(pick.text);
@@ -1021,22 +1078,35 @@ function formatRemainingMs(ms) {
   return `${s}s`;
 }
 
+function broadcastReminders() {
+  if (!invoke) return;
+  const payload = activeReminders.map((r) => ({
+    id: r.id,
+    label: r.label,
+    kind: r.kind,
+    fireAt: r.fireAt,
+  }));
+  invoke('reminders_broadcast_list', { list: payload }).catch(() => {});
+}
+
 function scheduleReminder(label, delayMs, { kind = 'reminder', onTrigger = null } = {}) {
   const id = nextReminderId++;
   const fireAt = Date.now() + delayMs;
   const entry = { id, label, kind, fireAt, timerId: null };
   entry.timerId = setTimeout(async () => {
     activeReminders = activeReminders.filter((r) => r.id !== id);
+    broadcastReminders();
     stopWalking(true);
     resetIdleTimer();
     playReminderChime();
     if (typeof onTrigger === 'function') {
       await onTrigger();
     } else {
-      await speakText(`[MOOD: smug] Ei Kio, hora do seu lembrete: ${label}!`, true);
+      await speakText(`[MOOD: smug] Ei${vocative(' ')}, hora do seu lembrete: ${label}!`, true);
     }
   }, delayMs);
   activeReminders.push(entry);
+  broadcastReminders();
   return entry;
 }
 
@@ -1050,11 +1120,11 @@ function startPomodoroCycle(focusMin = 25, breakMin = 5) {
   scheduleReminder(`Foco Pomodoro (${focusMin}min)`, focusMin * 60 * 1000, {
     kind: 'pomodoro',
     onTrigger: async () => {
-      await speakText(`[MOOD: smug] Pomodoro concluído, Kio! Hora de uma pausa de ${breakMin} minutos.`, true);
+      await speakText(`[MOOD: smug] Pomodoro concluído${vocative()}! Hora de uma pausa de ${breakMin} minutos.`, true);
       scheduleReminder(`Pausa Pomodoro (${breakMin}min)`, breakMin * 60 * 1000, {
         kind: 'pomodoro',
         onTrigger: async () => {
-          await speakText('[MOOD: idle] Pausa encerrada, Kio. Bora voltar pro foco ou mandar outro pomodoro?', true);
+          await speakText(`[MOOD: idle] Pausa encerrada${vocative()}. Bora voltar pro foco ou mandar outro pomodoro?`, true);
         },
       });
     },
@@ -1178,6 +1248,7 @@ async function tryDirectLocalCommand(message) {
     }
     toCancel.forEach((r) => clearTimeout(r.timerId));
     activeReminders = onlyPomo ? activeReminders.filter((r) => r.kind !== 'pomodoro') : [];
+    broadcastReminders();
     return onlyPomo
       ? '[MOOD: idle] Pomodoro cancelado.'
       : `[MOOD: idle] Cancelei ${toCancel.length} lembrete(s).`;
@@ -1496,7 +1567,14 @@ function encodeWAVBase64(samples, inputRate) {
   return uint8ToBase64(new Uint8Array(buffer));
 }
 
+let ttsSessionId = 0;
+let ttsQueue = [];
+let ttsQueueRunning = false;
+
 function stopCurrentAudio() {
+  ttsSessionId++;
+  ttsQueue = [];
+  ttsQueueRunning = false;
   if (lipSyncRaf) {
     cancelAnimationFrame(lipSyncRaf);
     lipSyncRaf = null;
@@ -1515,8 +1593,8 @@ function stopCurrentAudio() {
   setTtsPending(false);
 }
 
-async function playTtsPayload(audioBase64, mime) {
-  stopCurrentAudio();
+async function playTtsPayload(audioBase64, mime, { clearQueue = true } = {}) {
+  if (clearQueue) stopCurrentAudio();
   const url = base64ToBlobUrl(audioBase64, mime);
   const audio = new Audio(url);
   audio.volume = ttsVolume;
@@ -1604,57 +1682,89 @@ async function playTtsPayload(audioBase64, mime) {
     resetIdleTimer();
   };
 
-  audio.onplay = startLipSync;
-  audio.onended = finish;
-  audio.onerror = finish;
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      finish();
+      resolve();
+    };
+    audio.onplay = startLipSync;
+    audio.onended = done;
+    audio.onerror = done;
 
+    audio.play().catch((e) => {
+      console.error('[TTS play]', e);
+      done();
+    });
+  });
+}
+
+async function drainTtsQueue(sessionId) {
+  if (ttsQueueRunning) return;
+  ttsQueueRunning = true;
   try {
-    await audio.play();
-  } catch (e) {
-    console.error('[TTS play]', e);
-    finish();
+    while (ttsQueue.length > 0 && sessionId === ttsSessionId) {
+      const nextPromise = ttsQueue.shift();
+      const payload = await nextPromise;
+      if (sessionId !== ttsSessionId) break;
+      if (payload && payload.audio_base64) {
+        await playTtsPayload(payload.audio_base64, payload.mime, { clearQueue: false });
+      }
+    }
+  } finally {
+    if (sessionId === ttsSessionId) {
+      ttsQueueRunning = false;
+      setTtsPending(false);
+      if (!ttsPlaying) scheduleBubbleAutoHide(5500);
+    }
   }
+}
+
+function enqueueVoiceChunk(text, sessionId) {
+  const clean = text.replace(/\|/g, ' ').replace(/\r?\n/g, ' ').trim();
+  if (!clean || sessionId !== ttsSessionId) return;
+  setTtsPending(true);
+  // Dispara síntese imediatamente em paralelo enquanto o áudio anterior ainda toca (ou texto ainda chega)
+  const synthPromise = invoke('synthesize_fish_speech', { text: clean }).catch((e) => {
+    console.error('[Fish Audio TTS]', e);
+    return null;
+  });
+  ttsQueue.push(synthPromise);
+  drainTtsQueue(sessionId);
 }
 
 async function speakVoice(text) {
   const clean = text.replace(/\|/g, ' ').replace(/\r?\n/g, ' ').trim();
   if (!clean) return;
-  setTtsPending(true);
-  try {
-    const payload = await invoke('synthesize_fish_speech', { text: clean });
-    if (!payload || !payload.audio_base64) {
-      setTtsPending(false);
-      scheduleBubbleAutoHide(5500);
-      return;
-    }
-    await playTtsPayload(payload.audio_base64, payload.mime);
-  } catch (e) {
-    console.error('[Fish Audio TTS]', e);
-    setTtsPending(false);
-    scheduleBubbleAutoHide(5500);
-  }
+  stopCurrentAudio();
+  enqueueVoiceChunk(clean, ttsSessionId);
 }
 
 // Comentários espontâneos
-const IDLE_QUIPS_GENERAL = [
-  { mood: 'smug',  text: 'Bebe uma água aí, Kio, antes que você vire uma uva passa.' },
-  { mood: 'idle',  text: 'Tô só de olho no que você tá aprontando nessa tela.' },
-  { mood: 'smug',  text: 'Postura, Kio. Sua coluna agradece.' },
-  { mood: 'idle',  text: 'Se precisar que eu abra algo ou delegue pro Hermes, é só falar.' },
-  { mood: 'music', text: 'Um sonzinho no Spotify agora caía bem, hein.' },
-];
+function getIdleQuips() {
+  return [
+    { mood: 'smug',  text: `Bebe uma água aí${vocative()}, antes que você vire uma uva passa.` },
+    { mood: 'idle',  text: 'Tô só de olho no que você tá aprontando nessa tela.' },
+    { mood: 'smug',  text: `Postura${vocative()}. Sua coluna agradece.` },
+    { mood: 'idle',  text: 'Se precisar que eu abra algo ou delegue pro Hermes, é só falar.' },
+    { mood: 'music', text: 'Um sonzinho no Spotify agora caía bem, hein.' },
+  ];
+}
 
 function pickTimeQuip(hour) {
   if (hour >= 0 && hour < 6) {
-    return { mood: 'sleepy', text: 'Já é madrugada, Kio... não esquece que humanos precisam dormir.' };
+    return { mood: 'sleepy', text: `Já é madrugada${vocative()}... não esquece que humanos precisam dormir.` };
   }
   if (hour >= 6 && hour < 12) {
-    return { mood: 'idle', text: 'Bom dia, Kio. Já tomou café ou tá rodando no ódio?' };
+    return { mood: 'idle', text: `Bom dia${vocative()}. Já tomou café ou tá rodando no ódio?` };
   }
   if (hour >= 18 && hour < 23) {
-    return { mood: 'smug', text: 'Fim de dia já... vai fechar o código ou vai madrugar?' };
+    return { mood: 'smug', text: 'Fim de dia já... vai descansar ou vai madrugar?' };
   }
-  return IDLE_QUIPS_GENERAL[Math.floor(Math.random() * IDLE_QUIPS_GENERAL.length)];
+  const quips = getIdleQuips();
+  return quips[Math.floor(Math.random() * quips.length)];
 }
 
 async function triggerSpontaneousComment(force = false) {
@@ -1689,12 +1799,12 @@ async function triggerSpontaneousComment(force = false) {
   // 45% comentário sobre a janela ativa na tela, 30% fato curioso/aleatório, 25% frase solta
   if (ctx.title && (roll < 0.45 || (force && roll < 0.6))) {
     try {
-      const prompt = `Agora são ${hhmm}. A janela aberta do Kio é: "${ctx.title.slice(0, 100)}". Faça UM comentário espontâneo bem curto (máximo 1 frase, humor seco e amigável, sem tags de ação além de [MOOD: idle] ou [MOOD: smug]).`;
+      const prompt = `Agora são ${hhmm}. A janela aberta ${ownerOf()} é: "${ctx.title.slice(0, 100)}". Faça UM comentário espontâneo bem curto (máximo 1 frase, humor seco e amigável, sem tags de ação além de [MOOD: idle] ou [MOOD: smug]).`;
       const reply = await invoke('chat_ollama', {
         messages: [
           {
             role: 'system',
-            content: 'Você é Aster, assistente de desktop do Kio. Personalidade seca, bem-humorada e informal em PT-BR. Responda sempre com [MOOD: idle] ou [MOOD: smug] seguido de 1 única frase bem curta.',
+            content: `Você é Aster, assistente de desktop ${ownerOf()}. Personalidade seca, bem-humorada e informal em PT-BR. Responda sempre com [MOOD: idle] ou [MOOD: smug] seguido de 1 única frase bem curta.`,
           },
           { role: 'user', content: prompt },
         ],
@@ -1713,7 +1823,7 @@ async function triggerSpontaneousComment(force = false) {
         messages: [
           {
             role: 'system',
-            content: 'Você é Aster, assistente de desktop do Kio. Personalidade seca, inteligente e informal em PT-BR. Comece com [MOOD: smug] ou [MOOD: idle] seguido de 1 frase bem curta.',
+            content: `Você é Aster, assistente de desktop ${ownerOf()}. Personalidade seca, inteligente e informal em PT-BR. Comece com [MOOD: smug] ou [MOOD: idle] seguido de 1 frase bem curta.`,
           },
           { role: 'user', content: prompt },
         ],
@@ -1727,10 +1837,11 @@ async function triggerSpontaneousComment(force = false) {
     } catch (_) {}
   }
 
+  const quips = getIdleQuips();
   const pick =
     Math.random() < 0.35
       ? pickTimeQuip(hour)
-      : IDLE_QUIPS_GENERAL[Math.floor(Math.random() * IDLE_QUIPS_GENERAL.length)];
+      : quips[Math.floor(Math.random() * quips.length)];
   await speakText(`[MOOD: ${pick.mood}] ${pick.text}`, true);
 }
 
@@ -1824,7 +1935,7 @@ function handleSpokenText(transcript) {
     resetIdleTimer();
     triggerBounce();
     sprite.src = SPRITES.listen;
-    showBubble('Tô ouvindo, Kio. Manda.', 12000);
+    showBubble(`Tô ouvindo${vocative()}. Manda.`, 12000);
     speakVoice('Tô ouvindo.');
   }
 }
@@ -2228,7 +2339,7 @@ async function askAster(message) {
       setMood('think');
       showBubble('Olhando sua tela...', 0);
       const userQuestion = (visionMatch[1]?.trim() || message).trim() || 'Descreva brevemente o que está na minha tela e comente.';
-      const visionSystem = 'Você é Aster, assistente de desktop do Kio no Windows 11. Personalidade direta, humor seco, informal em PT-BR e respostas curtas (1 a 3 frases). Comece sempre com [MOOD: idle], [MOOD: smug] ou [MOOD: angry]. Você está vendo um print real da tela do Kio agora.';
+      const visionSystem = `Você é Aster, assistente de desktop ${ownerOf()} no Windows 11. Personalidade direta, humor seco, informal em PT-BR e respostas curtas (1 a 3 frases). Comece sempre com [MOOD: idle], [MOOD: smug] ou [MOOD: angry]. Você está vendo um print real da tela ${ownerOf()} agora.`;
       const visionReply = await invoke('ask_ollama_vision', {
         prompt: userQuestion,
         systemPrompt: visionSystem,
@@ -2244,7 +2355,7 @@ async function askAster(message) {
       try {
         const clip = (await invoke('read_clipboard'))?.trim();
         if (clip) {
-          promptToSend += `\n\n[Conteúdo atual do Ctrl+C do Kio]:\n${clip.slice(0, 1500)}`;
+          promptToSend += `\n\n[Conteúdo atual do Ctrl+C ${ownerOf()}]:\n${clip.slice(0, 1500)}`;
         }
       } catch (e) {
         console.warn('Falha ao ler clipboard:', e);
@@ -2255,17 +2366,17 @@ async function askAster(message) {
     try {
       const docHits = (await invoke('docs_search', { query: message, maxChars: 1200 }))?.trim();
       if (docHits) {
-        promptToSend += `\n\n[Trechos relevantes dos documentos locais do Kio]:\n${docHits}`;
+        promptToSend += `\n\n[Trechos relevantes dos documentos locais ${ownerOf()}]:\n${docHits}`;
       }
     } catch (e) {
       console.warn('[docs_search]', e);
     }
 
-    // 6. Cérebro local (Ollama com streaming em tempo real)
+    // 6. Cérebro local/híbrido (Ollama ou Cloud com streaming em tempo real)
     setMode(false);
     history[0] = { role: 'system', content: buildSystemPrompt() };
     history.push({ role: 'user', content: promptToSend });
-    if (history.length > 9) history = [history[0], ...history.slice(-8)];
+    if (history.length > 19) history = [history[0], ...history.slice(-18)];
 
     let streamRaw = '';
     let streamedVisible = false;
@@ -2273,6 +2384,9 @@ async function askAster(message) {
     let streamLastTalkToggle = 0;
     let streamTalkOpen = false;
     let unlistenChunk = null;
+    let spokenPrefixLen = 0;
+    stopCurrentAudio();
+    const streamTtsSession = ttsSessionId;
 
     const sanitizeStreamingText = (raw) => {
       let s = raw.replace(/<think>[\s\S]*?<\/think>/gi, '');
@@ -2313,6 +2427,15 @@ async function askAster(message) {
           speechText.textContent = visible;
           speechBubble.scrollTop = speechBubble.scrollHeight;
 
+          // Pré-dispara a voz assim que a primeira frase fecha (. ! ?) durante o streaming!
+          const remaining = visible.slice(spokenPrefixLen);
+          const sentMatch = remaining.match(/^([\s\S]{14,}?[.!?])(?:\s|$)/);
+          if (sentMatch) {
+            const sentence = sentMatch[1].trim();
+            spokenPrefixLen += sentMatch[0].length;
+            enqueueVoiceChunk(sentence, streamTtsSession);
+          }
+
           const isSeated = currentMood === 'sit' || perchedHwnd !== null;
           if (!ttsPlaying && !isSeated && !isWalking) {
             const now = performance.now();
@@ -2332,7 +2455,7 @@ async function askAster(message) {
       reply = await invoke('chat_ollama_stream', {
         messages: history,
         temperature: 0.7,
-        numCtx: 2048,
+        numCtx: 4096,
       });
     } finally {
       if (typeof unlistenChunk === 'function') {
@@ -2364,9 +2487,10 @@ async function askAster(message) {
         .trim();
       speechText.textContent = cleanFinal || '...';
       speechBubble.scrollTop = speechBubble.scrollHeight;
-      if (cleanFinal) {
-        speakVoice(cleanFinal);
-      } else {
+      const tailToSpeak = cleanFinal.slice(spokenPrefixLen).trim();
+      if (tailToSpeak) {
+        enqueueVoiceChunk(tailToSpeak, streamTtsSession);
+      } else if (!ttsPlaying && !ttsQueueRunning) {
         scheduleBubbleAutoHide(7000);
       }
     } else {
@@ -2469,9 +2593,9 @@ async function pollNowPlaying() {
                 messages: [
                   {
                     role: 'system',
-                    content: 'Você é Aster, assistente de desktop do Kio. Personalidade seca, bem-humorada e informal em PT-BR. Comece com [MOOD: music] seguido de 1 frase bem curta comentando a música que começou a tocar.',
+                    content: `Você é Aster, assistente de desktop ${ownerOf()}. Personalidade seca, bem-humorada e informal em PT-BR. Comece com [MOOD: music] seguido de 1 frase bem curta comentando a música que começou a tocar.`,
                   },
-                  { role: 'user', content: `O Kio acabou de colocar pra tocar: ${faixa}. Faça um comentário espontâneo bem curto.` },
+                  { role: 'user', content: `${ownerLabel()} acabou de colocar pra tocar: ${faixa}. Faça um comentário espontâneo bem curto.` },
                 ],
                 temperature: 0.85,
                 numCtx: 1024,
@@ -2490,12 +2614,115 @@ async function pollNowPlaying() {
   } catch (_) {}
 }
 
+async function pollLolGame() {
+  if (!invoke || !lolEnabled || document.hidden) return;
+  try {
+    // 1. Detecta jogos conhecidos pela janela ativa (Valorant, CS2, Minecraft, Elden Ring, etc.)
+    try {
+      const ctx = await invoke('get_active_window_context');
+      const detected = ctx?.title ? await invoke('detect_known_game', { windowTitle: ctx.title }) : null;
+      if (detected) {
+        activeGameName = detected;
+        const busyNow = isSpeaking || isThinking || ttsPlaying || ttsPending || isDragging || isListeningVoice;
+        if (!announcedGames.has(detected) && !busyNow && spontaneousEnabled && Date.now() - lastLolCommentAt > 25000) {
+          announcedGames.add(detected);
+          lastLolCommentAt = Date.now();
+          await speakText(`[MOOD: smug] ${detected} aberto! Boa partida${vocative()} — vou ficar de olho.`, true);
+        }
+      } else if (!lolState.in_game) {
+        activeGameName = '';
+      }
+    } catch (_) {}
+
+    // 2. API ao vivo oficial do League of Legends (kills, dragão, barão, vitória/derrota)
+    const st = await invoke('get_lol_state');
+    if (!st || !st.in_game) {
+      lolState = { in_game: false, summoner: '', champion: '', kills: 0, deaths: 0, assists: 0 };
+      lastLolEventId = -1;
+      return;
+    }
+    activeGameName = 'League of Legends';
+    const wasInGame = lolState.in_game;
+    lolState = st;
+
+    const events = Array.isArray(st.events) ? st.events : [];
+    if (!wasInGame) {
+      lastLolEventId = events.length ? events[events.length - 1].id : 0;
+      return;
+    }
+
+    const busy = isSpeaking || isThinking || ttsPlaying || ttsPending || isDragging || isListeningVoice;
+    const now = Date.now();
+    let reaction = null;
+
+    for (const ev of events) {
+      if (ev.id <= lastLolEventId) continue;
+      lastLolEventId = ev.id;
+      const isMe = st.summoner && ev.killer && ev.killer.toLowerCase().includes(st.summoner.toLowerCase());
+      if (ev.name === 'FirstBlood' && isMe) {
+        reaction = `[MOOD: smug] First Blood de ${st.champion || 'campeão'}! Começou amassando${vocative()}.`;
+      } else if (ev.name === 'Multikill' && isMe && ev.streak >= 2) {
+        const names = { 2: 'Double Kill', 3: 'Triple Kill', 4: 'Quadra Kill', 5: 'PENTAKILL' };
+        const label = names[ev.streak] || `${ev.streak} kills`;
+        reaction = `[MOOD: smug] ${label}!! Jogou muito${vocative()}!`;
+      } else if (ev.name === 'BaronKill') {
+        reaction = '[MOOD: smug] Barão na conta! Agora é fechar esse jogo.';
+      } else if (ev.name === 'DragonKill' && isMe) {
+        reaction = '[MOOD: idle] Dragão garantido. Controle de mapa em dia.';
+      } else if (ev.name === 'GameEnd') {
+        reaction = ev.result === 'Win'
+          ? `[MOOD: smug] Vitória de ${st.champion || 'boa'} (${st.kills}/${st.deaths}/${st.assists})! GG demais${vocative()}.`
+          : `[MOOD: idle] Derrota dessa vez (${st.kills}/${st.deaths}/${st.assists}). Respira que a próxima sai.`;
+      }
+    }
+
+    if (reaction && !busy && spontaneousEnabled && now - lastLolCommentAt > 35000) {
+      lastLolCommentAt = now;
+      await speakText(reaction, true);
+    }
+  } catch (_) {}
+}
+
+tauriEvent?.listen?.('aster-reminder-action', (ev) => {
+  const p = ev?.payload;
+  if (!p || typeof p !== 'object') return;
+  if (p.action === 'list') {
+    broadcastReminders();
+  } else if (p.action === 'pomodoro') {
+    const f = Math.max(1, Math.min(180, Number(p.focus || 25)));
+    const b = Math.max(1, Math.min(60, Number(p.brk || 5)));
+    startPomodoroCycle(f, b);
+    showBubble(`Pomodoro iniciado: ${f}min foco / ${b}min pausa.`, 5000);
+  } else if (p.action === 'add') {
+    const mins = Number(p.minutes || 0);
+    const label = String(p.label || '').trim() || 'seu lembrete';
+    if (mins > 0 && mins <= 1440) {
+      scheduleReminder(label, Math.round(mins * 60 * 1000));
+      showBubble(`Lembrete marcado em ${formatRemainingMs(mins * 60 * 1000)}: "${label}".`, 5000);
+    }
+  } else if (p.action === 'cancel') {
+    const id = Number(p.id);
+    const found = activeReminders.find((r) => r.id === id);
+    if (found) {
+      clearTimeout(found.timerId);
+      activeReminders = activeReminders.filter((r) => r.id !== id);
+      broadcastReminders();
+    }
+  } else if (p.action === 'cancel_all') {
+    activeReminders.forEach((r) => clearTimeout(r.timerId));
+    activeReminders = [];
+    broadcastReminders();
+  }
+});
+
 setMode(false);
 refreshMemories();
 refreshTtsVolume();
 applySkin();
 pollNowPlaying();
 setInterval(pollNowPlaying, 4000);
+pollLolGame();
+setInterval(pollLolGame, 5000);
 tauriEvent?.listen?.('aster-skin-changed', (ev) => {
   applySkin(typeof ev?.payload === 'string' ? ev.payload : null);
 });
@@ -2516,6 +2743,17 @@ tauriEvent?.listen?.('aster-settings-updated', (ev) => {
     if (typeof payload.particles_enabled === 'boolean') {
       particlesEnabled = payload.particles_enabled;
       if (!particlesEnabled && ambientLayer) ambientLayer.innerHTML = '';
+    }
+    if (typeof payload.sprite_scale === 'number' && Number.isFinite(payload.sprite_scale)) {
+      document.documentElement.style.setProperty('--sprite-scale', String(Math.max(0.75, Math.min(1.3, payload.sprite_scale / 100))));
+      syncHitRects();
+    }
+    if (typeof payload.lol_enabled === 'boolean') {
+      lolEnabled = payload.lol_enabled;
+    }
+    if (typeof payload.user_name === 'string') {
+      userName = payload.user_name.trim();
+      history[0] = { role: 'system', content: buildSystemPrompt() };
     }
   } else {
     refreshTtsVolume();

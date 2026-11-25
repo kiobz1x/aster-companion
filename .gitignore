@@ -5,6 +5,7 @@ docs/
 
 # Skins privadas/locais (não subir para o Git)
 skins/akali/
+skins/snorlax/
 
 # Binários compilados (suba o Aster.exe na aba Releases do GitHub)
 Aster.exe

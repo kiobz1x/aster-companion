@@ -21,6 +21,7 @@ pub struct SkinInfo {
     pub sprite_count: usize,
     pub active: bool,
     pub present_keys: Vec<String>,
+    pub preview: Option<String>,
 }
 
 pub fn skins_dir_path() -> Result<PathBuf, String> {
@@ -41,28 +42,46 @@ pub fn skins_dir_path() -> Result<PathBuf, String> {
     Ok(dir)
 }
 
+fn sprite_mime_and_priority(filename: &str) -> Option<(&'static str, u8)> {
+    let low = filename.to_lowercase();
+    if low.ends_with(".gif") {
+        Some(("image/gif", 3))
+    } else if low.ends_with(".webp") {
+        Some(("image/webp", 2))
+    } else if low.ends_with(".png") {
+        Some(("image/png", 1))
+    } else {
+        None
+    }
+}
+
 fn map_filename_to_key(filename: &str) -> Option<&'static str> {
-    match filename.to_lowercase().as_str() {
-        "aster_idle.png" | "idle.png" => Some("idle"),
-        "aster_blink.png" | "blink.png" => Some("blink"),
-        "aster_talk.png" | "talk.png" => Some("talk"),
-        "aster_talk_calm.png" | "talk_calm.png" => Some("talk_calm"),
-        "aster_smug.png" | "smug.png" => Some("smug"),
-        "aster_angry.png" | "angry.png" => Some("angry"),
-        "aster_sleepy.png" | "sleepy.png" => Some("sleepy"),
-        "aster_think.png" | "think.png" => Some("think"),
-        "aster_drag.png" | "drag.png" => Some("drag"),
-        "aster_sit.png" | "sit.png" => Some("sit"),
-        "aster_listen.png" | "listen.png" => Some("listen"),
-        "aster_music.png" | "music.png" => Some("music"),
-        "aster_walk_1.png" | "walk_1.png" => Some("walk1"),
-        "aster_walk_2.png" | "walk_2.png" => Some("walk2"),
-        "aster_walk_3.png" | "walk_3.png" => Some("walk3"),
-        "aster_walk_4.png" | "walk_4.png" => Some("walk4"),
-        "aster_walk_5.png" | "walk_5.png" => Some("walk5"),
-        "aster_walk_6.png" | "walk_6.png" => Some("walk6"),
-        "aster_walk_7.png" | "walk_7.png" => Some("walk7"),
-        "aster_walk_8.png" | "walk_8.png" => Some("walk8"),
+    let low = filename.to_lowercase();
+    let stem = low
+        .strip_suffix(".png")
+        .or_else(|| low.strip_suffix(".webp"))
+        .or_else(|| low.strip_suffix(".gif"))?;
+    match stem {
+        "aster_idle" | "idle" => Some("idle"),
+        "aster_blink" | "blink" => Some("blink"),
+        "aster_talk" | "talk" => Some("talk"),
+        "aster_talk_calm" | "talk_calm" => Some("talk_calm"),
+        "aster_smug" | "smug" => Some("smug"),
+        "aster_angry" | "angry" => Some("angry"),
+        "aster_sleepy" | "sleepy" => Some("sleepy"),
+        "aster_think" | "think" => Some("think"),
+        "aster_drag" | "drag" => Some("drag"),
+        "aster_sit" | "sit" => Some("sit"),
+        "aster_listen" | "listen" => Some("listen"),
+        "aster_music" | "music" => Some("music"),
+        "aster_walk_1" | "walk_1" => Some("walk1"),
+        "aster_walk_2" | "walk_2" => Some("walk2"),
+        "aster_walk_3" | "walk_3" => Some("walk3"),
+        "aster_walk_4" | "walk_4" => Some("walk4"),
+        "aster_walk_5" | "walk_5" => Some("walk5"),
+        "aster_walk_6" | "walk_6" => Some("walk6"),
+        "aster_walk_7" | "walk_7" => Some("walk7"),
+        "aster_walk_8" | "walk_8" => Some("walk8"),
         _ => None,
     }
 }
@@ -99,6 +118,7 @@ pub fn skins_list() -> Result<Vec<SkinInfo>, String> {
         sprite_count: 20,
         active: active_id == "padrao",
         present_keys: all_default_keys,
+        preview: None,
     }];
 
     let dir = skins_dir_path()?;
@@ -113,21 +133,38 @@ pub fn skins_list() -> Result<Vec<SkinInfo>, String> {
             if id.starts_with('.') || id.starts_with('_') || id.eq_ignore_ascii_case("padrao") {
                 continue;
             }
-            let mut keys: Vec<String> = fs::read_dir(&p)
-                .map(|rd| {
-                    rd.flatten()
-                        .filter_map(|e| {
-                            e.file_name()
-                                .to_str()
-                                .and_then(map_filename_to_key)
-                                .map(|k| k.to_string())
-                        })
-                        .collect()
-                })
-                .unwrap_or_default();
+            let mut keys: Vec<String> = Vec::new();
+            let mut preview_path: Option<(PathBuf, &'static str, u8)> = None;
+            if let Ok(rd) = fs::read_dir(&p) {
+                for e in rd.flatten() {
+                    let ep = e.path();
+                    if !ep.is_file() {
+                        continue;
+                    }
+                    let Some(fname) = e.file_name().to_str().map(|s| s.to_string()) else {
+                        continue;
+                    };
+                    if let (Some(key), Some((mime, prio))) =
+                        (map_filename_to_key(&fname), sprite_mime_and_priority(&fname))
+                    {
+                        keys.push(key.to_string());
+                        if key == "idle" {
+                            let replace = preview_path.as_ref().map(|(_, _, p0)| prio > *p0).unwrap_or(true);
+                            if replace {
+                                preview_path = Some((ep, mime, prio));
+                            }
+                        }
+                    }
+                }
+            }
             keys.sort();
             keys.dedup();
             let count = keys.len();
+            let preview = preview_path.and_then(|(pp, mime, _)| {
+                fs::read(&pp)
+                    .ok()
+                    .map(|bytes| format!("data:{mime};base64,{}", BASE64.encode(&bytes)))
+            });
 
             custom.push(SkinInfo {
                 name: prettify_name(&id),
@@ -135,6 +172,7 @@ pub fn skins_list() -> Result<Vec<SkinInfo>, String> {
                 id,
                 sprite_count: count,
                 present_keys: keys,
+                preview,
             });
         }
         custom.sort_by(|a, b| a.id.to_lowercase().cmp(&b.id.to_lowercase()));
@@ -166,6 +204,7 @@ pub fn skins_get_overrides(skin_id: Option<String>) -> Result<HashMap<String, St
         return Ok(map);
     }
 
+    let mut priorities: HashMap<&'static str, u8> = HashMap::new();
     if let Ok(entries) = fs::read_dir(&skin_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
@@ -175,12 +214,18 @@ pub fn skins_get_overrides(skin_id: Option<String>) -> Result<HashMap<String, St
             let Some(fname) = entry.file_name().to_str().map(|s| s.to_string()) else {
                 continue;
             };
-            let Some(key) = map_filename_to_key(&fname) else {
+            let (Some(key), Some((mime, prio))) =
+                (map_filename_to_key(&fname), sprite_mime_and_priority(&fname))
+            else {
                 continue;
             };
+            if priorities.get(key).copied().unwrap_or(0) > prio {
+                continue;
+            }
             if let Ok(bytes) = fs::read(&path) {
-                let data_uri = format!("data:image/png;base64,{}", BASE64.encode(&bytes));
+                let data_uri = format!("data:{mime};base64,{}", BASE64.encode(&bytes));
                 map.insert(key.to_string(), data_uri);
+                priorities.insert(key, prio);
             }
         }
     }
