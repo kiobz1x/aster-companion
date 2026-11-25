@@ -115,8 +115,8 @@ fn strip_think_tags(input: &str) -> String {
 }
 
 fn is_gemini_thinking_model(cfg: &AppConfig) -> bool {
-    cfg.cloud_url.contains("generativelanguage.googleapis.com")
-        || cfg.cloud_model.to_lowercase().contains("gemini-2.5")
+    let m = cfg.cloud_model.to_lowercase();
+    m.contains("gemini-2.5-flash") && !m.contains("lite")
 }
 
 async fn chat_cloud_once(
@@ -784,6 +784,62 @@ pub async fn test_ai_connection() -> Result<String, String> {
         ms,
         reply.chars().take(30).collect::<String>()
     ))
+}
+
+#[tauri::command]
+pub async fn list_cloud_models() -> Result<Vec<String>, String> {
+    let cfg = AppConfig::load();
+    if cfg.cloud_api_key.is_empty() || cfg.cloud_url.is_empty() {
+        return Err("Informe o Serviço/URL e a API Key primeiro.".into());
+    }
+
+    let models_url = if let Some(prefix) = cfg.cloud_url.strip_suffix("/chat/completions") {
+        format!("{prefix}/models")
+    } else if cfg.cloud_url.ends_with("/models") {
+        cfg.cloud_url.clone()
+    } else {
+        format!("{}/models", cfg.cloud_url.trim_end_matches('/'))
+    };
+
+    let res = external_http()
+        .get(&models_url)
+        .header("Authorization", format!("Bearer {}", cfg.cloud_api_key))
+        .timeout(Duration::from_secs(15))
+        .send()
+        .await
+        .map_err(|e| format!("Erro consultando modelos: {e}"))?;
+
+    if !res.status().is_success() {
+        let st = res.status();
+        let body = res.text().await.unwrap_or_default();
+        return Err(format!("HTTP {st}: {}", body.chars().take(120).collect::<String>()));
+    }
+
+    let body: serde_json::Value = res.json().await.map_err(|e| format!("Resposta inválida: {e}"))?;
+    let mut models: Vec<String> = body["data"]
+        .as_array()
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|item| item["id"].as_str())
+                .map(|id| id.strip_prefix("models/").unwrap_or(id).to_string())
+                .filter(|id| {
+                    let l = id.to_lowercase();
+                    !l.contains("whisper")
+                        && !l.contains("tts")
+                        && !l.contains("embedding")
+                        && !l.contains("imagen")
+                        && !l.contains("veo")
+                        && !l.contains("audio")
+                        && !l.contains("guard")
+                        && !l.contains("moderation")
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    models.sort();
+    models.dedup();
+    Ok(models)
 }
 
 #[tauri::command]

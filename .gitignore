@@ -7,8 +7,9 @@ docs/
 skins/akali/
 skins/snorlax/
 
-# Binários compilados (suba o Aster.exe na aba Releases do GitHub)
+# Binários compilados e pacotes de release (suba na aba Releases do GitHub)
 Aster.exe
+*.zip
 
 # Dependências e caches de build
 node_modules/

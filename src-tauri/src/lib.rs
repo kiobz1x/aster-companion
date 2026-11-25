@@ -963,6 +963,7 @@ pub fn run() {
             brain::chat_ollama_stream,
             brain::ask_ollama_vision,
             brain::list_ollama_models,
+            brain::list_cloud_models,
             brain::test_ai_connection,
             brain::ask_hermes,
             brain::post_discord_webhook,

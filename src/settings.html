@@ -673,7 +673,13 @@
 
         <!-- Card Nuvem (visível quando provedor = cloud) -->
         <div id="cloud-card" class="glass-card" style="display:none">
-          <div class="card-section-title">API na Nuvem (fallback automático para Ollama se cair)</div>
+          <div class="row" style="justify-content:space-between">
+            <div class="card-section-title">API na Nuvem (fallback automático para Ollama se cair)</div>
+            <button id="refresh-cloud-models-btn" class="health-refresh" type="button" title="Buscar modelos disponíveis na sua API Key">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              <span>Listar modelos</span>
+            </button>
+          </div>
           <div class="grid-2">
             <div class="field">
               <label for="cloud_preset">Serviço</label>
@@ -687,7 +693,8 @@
             </div>
             <div class="field">
               <label for="cloud_model">Modelo</label>
-              <input id="cloud_model" type="text" placeholder="gemini-2.5-flash" />
+              <input id="cloud_model" type="text" placeholder="gemini-3.5-flash-lite" />
+              <select id="cloud_model_picker" style="display:none;margin-top:5px"></select>
             </div>
           </div>
           <div class="field">
@@ -1026,8 +1033,8 @@
     let hasUnsavedChanges = false;
 
     const CLOUD_PRESETS = {
-      gemini: { url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', model: 'gemini-2.5-flash' },
-      groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.3-70b-versatile' },
+      gemini: { url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', model: 'gemini-3.5-flash-lite' },
+      groq: { url: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.1-8b-instant' },
       openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions', model: 'google/gemini-2.5-flash' },
       openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
     };
@@ -1168,6 +1175,47 @@
     document.getElementById('refresh-models-btn').addEventListener('click', async () => {
       const n = await refreshOllamaModels();
       setStatus(n ? `${n} modelo(s) encontrado(s) no Ollama.` : 'Ollama offline ou sem modelos instalados.', !n);
+    });
+
+    const cloudModelPicker = document.getElementById('cloud_model_picker');
+    cloudModelPicker.addEventListener('change', () => {
+      if (cloudModelPicker.value) {
+        document.getElementById('cloud_model').value = cloudModelPicker.value;
+        markDirty();
+      }
+    });
+    document.getElementById('refresh-cloud-models-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('refresh-cloud-models-btn');
+      btn.disabled = true;
+      setStatus('Consultando modelos disponíveis na sua conta...');
+      const ok = await saveAll(true);
+      if (!ok) {
+        btn.disabled = false;
+        return;
+      }
+      try {
+        const models = (await invoke('list_cloud_models')) || [];
+        if (!models.length) {
+          cloudModelPicker.style.display = 'none';
+          setStatus('Nenhum modelo retornado por este provedor.', true);
+          return;
+        }
+        const cur = document.getElementById('cloud_model').value.trim();
+        cloudModelPicker.innerHTML = '<option value="">-- Escolha um modelo disponível --</option>';
+        models.forEach((m) => {
+          const opt = document.createElement('option');
+          opt.value = m;
+          opt.textContent = m;
+          if (m === cur) opt.selected = true;
+          cloudModelPicker.appendChild(opt);
+        });
+        cloudModelPicker.style.display = 'block';
+        setStatus(`${models.length} modelo(s) disponível(is) na sua chave. Escolha na lista!`);
+      } catch (e) {
+        setStatus(`Erro listando modelos: ${e}`, true);
+      } finally {
+        btn.disabled = false;
+      }
     });
 
     async function refreshHealth() {
