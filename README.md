@@ -7,7 +7,7 @@
 Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Rust + HTML/CSS/JS)** com foco em baixo consumo de recursos, animações interativas estilo *desktop pet* e automação nativa do sistema com IA híbrida.
 
 <p>
-  <a href="https://github.com/kiobz1x/aster-companion/releases"><img src="https://img.shields.io/badge/versão-v1.3.0-7c3aed?style=flat-square" alt="Versão v1.3.0" /></a>
+  <a href="https://github.com/kiobz1x/aster-companion/releases"><img src="https://img.shields.io/badge/versão-v1.3.1-7c3aed?style=flat-square" alt="Versão v1.3.1" /></a>
   <img src="https://img.shields.io/badge/Windows-11-18181b?style=flat-square&logo=windows11&logoColor=c4b5fd" alt="Windows 11" />
   <img src="https://img.shields.io/badge/Tauri_v2-Rust-18181b?style=flat-square&logo=tauri&logoColor=c4b5fd" alt="Tauri v2 + Rust" />
   <img src="https://img.shields.io/badge/IA-Ollama_%7C_Nuvem-18181b?style=flat-square" alt="IA Híbrida" />
@@ -52,16 +52,36 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 
 ---
 
-## Download Rápido (Windows 11)
+## Download e Instalação Rápida (Windows 11 — sem programar)
 
-Para apenas usar a Aster **sem instalar Node, Rust ou Python**:
+> [!IMPORTANT]
+> Na página de [Releases](https://github.com/kiobz1x/aster-companion/releases), baixe **APENAS** o arquivo **`Aster-Companion-v1.3.1-win64.zip`** (não precisa baixar o *Source code*).
 
-1. Baixe a versão mais recente na aba [Releases](https://github.com/kiobz1x/aster-companion/releases) e extraia a pasta no seu PC.
-2. Execute `Aster.exe`.
-3. Clique no ícone de engrenagem (ou digite `/config`):
-   * Em **Cérebro (IA)**, escolha **Na Nuvem** (ex.: Google Gemini ou Groq) e cole sua API Key — ou deixe em **Ollama Local** se já tiver o Ollama instalado. Clique em **Testar IA**.
-   * Em **Memória**, preencha **"Como a Aster deve te chamar"**.
-4. Aperte `Alt + A` ou clique na Aster para conversar. Veja tudo que ela faz em [COMANDOS.md](COMANDOS.md).
+### 1. Abrir a Aster
+1. Extraia o `.zip` em qualquer pasta do PC (ex.: `Documentos\Aster`).
+2. Abra o **`Aster.exe`**.
+   * *Se o Windows mostrar o aviso azul do SmartScreen na 1ª vez:* clique em **Mais informações → Executar assim mesmo**.
+
+### 2. Ativar a Inteligência Artificial (grátis, leva 1 minuto)
+Clique no ícone de engrenagem (ou digite `/config`) → aba **Cérebro (IA)**:
+* **Opção A — Na Nuvem (recomendado para a maioria dos PCs):**
+  1. Em **Onde a IA vai rodar**, escolha **Na Nuvem**.
+  2. Escolha **Groq** (crie uma chave grátis em [console.groq.com/keys](https://console.groq.com/keys) — **também libera o microfone sem precisar de Python!**) ou **Google Gemini** ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)).
+  3. Cole a API Key, clique em **Listar modelos** para escolher um modelo ativo da sua conta e clique em **Testar IA**.
+* **Opção B — 100% Offline no seu PC (Ollama):**
+  1. Instale o [Ollama](https://ollama.com/download) e rode no terminal: `ollama pull qwen3:4b-instruct` (ou `ollama pull gemma3:12b` para respostas mais profundas).
+  2. Em **Cérebro (IA)**, deixe em **Ollama Local**, clique em **Atualizar modelos** e **Testar IA**.
+
+### 3. Colocar seu nome, voz e skins (opcional)
+* **Seu nome:** aba **Memória** → preencha **"Como a Aster deve te chamar"** e clique em **Salvar Configurações**.
+* **Voz da Aster falando:** aba **Voz** → ative a voz, crie uma chave em [fish.audio](https://fish.audio), cole a **Chave Fish Audio** + **ID da Voz** e clique em **Testar Voz**.
+* **Microfone (falar *"Aster..."*):**
+  * Se você configurou **Groq** na aba **Cérebro (IA)**, basta clicar no botão de microfone — já funciona direto sem instalar nada.
+  * Para usar microfone **offline** sem Groq, instale **Python 3.12**, coloque `transcrever.py` e `requirements.txt` na pasta do `Aster.exe` e rode `python -m venv .venv` + `.\.venv\Scripts\pip install -r requirements.txt`.
+* **Skins:** a **Skin Natalina** já vem inclusa. Para adicionar outras skins baixadas, clique em **Visual → Skins → Abrir pasta skins**, cole a pasta da skin lá dentro e clique em **Atualizar**.
+* **Como atualizar no futuro sem perder nada:** feche a Aster, extraia o `.zip` novo **por cima da mesma pasta** (substituindo o `Aster.exe`). Suas chaves (`.env`), memórias (`memory.json`), `docs/` e skins extras nunca são apagados.
+
+Veja todos os comandos e atalhos em [COMANDOS.md](COMANDOS.md).
 
 ---
 

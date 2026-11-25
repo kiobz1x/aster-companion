@@ -556,3 +556,55 @@ try {
     run_ps_hidden(ps, &[("ASTER_USER", user_trim), ("ASTER_MSG", msg_trim)]);
     Ok(())
 }
+
+#[tauri::command]
+pub fn close_app(name: String) -> Result<String, String> {
+    let key = normalize_app_key(&name);
+    let targets: &[&str] = match key.as_str() {
+        "spotify" | "spot" => &["Spotify.exe"],
+        "discord" | "dc" => &["Discord.exe"],
+        "whatsapp" | "wpp" | "zap" => &["WhatsApp.exe"],
+        "brave" => &["brave.exe"],
+        "vivaldi" => &["vivaldi.exe"],
+        "chrome" | "google chrome" => &["chrome.exe"],
+        "edge" | "microsoft edge" => &["msedge.exe"],
+        "firefox" => &["firefox.exe"],
+        "opera" | "opera gx" => &["opera.exe"],
+        "navegador" | "browser" => &["brave.exe", "chrome.exe", "msedge.exe", "vivaldi.exe", "firefox.exe", "opera.exe"],
+        "vscode" | "vs code" | "code" => &["Code.exe"],
+        "steam" => &["steam.exe"],
+        "calculadora" | "calc" => &["CalculatorApp.exe", "Calculator.exe"],
+        "notepad" | "bloco de notas" => &["Notepad.exe"],
+        "paint" => &["mspaint.exe"],
+        "obs" | "obs studio" => &["obs64.exe"],
+        "vlc" => &["vlc.exe"],
+        "telegram" => &["Telegram.exe"],
+        "terminal" | "powershell" | "cmd" => &["WindowsTerminal.exe"],
+        _ => return Err(format!("Por segurança, não fecho '{name}' automaticamente.")),
+    };
+
+    #[cfg(windows)]
+    {
+        let mut closed_any = false;
+        for exe in targets {
+            let mut cmd = Command::new("taskkill");
+            cmd.args(["/IM", exe, "/F"]);
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            if let Ok(out) = cmd.output() {
+                if out.status.success() {
+                    closed_any = true;
+                }
+            }
+        }
+        if closed_any {
+            Ok(format!("Fechado: {name}"))
+        } else {
+            Ok(format!("{name} não estava aberto."))
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = targets;
+        Err("Fechar aplicativos suportado apenas no Windows.".into())
+    }
+}

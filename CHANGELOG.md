@@ -2,6 +2,21 @@
 
 Todas as mudanças relevantes do projeto são documentadas neste arquivo.
 
+## [1.3.1] - 2026-11-25
+
+### Novos Recursos & Melhorias
+- **Fechar aplicativos (`[CLOSE_APP: nome]`):** agora a Aster fecha apps conhecidos por comando direto ou conversa (*"fecha o Spotify"*, *"fecha o Discord"*, *"fecha o navegador"*, *"fecha a calculadora"*, etc.) com whitelist segura.
+- **Microfone sem Python (Groq Whisper na nuvem):** quem usa chave grátis do **Groq** em **Cérebro (IA)** agora pode usar o botão de microfone nativamente em Rust via `whisper-large-v3-turbo` (zero Python, zero `.venv`!). O Whisper offline continua disponível como alternativa.
+- **Botão "Listar modelos" na API na Nuvem:** consulta automaticamente os modelos ativos da API Key (Groq, Gemini, OpenRouter ou OpenAI) e permite escolher em um dropdown, evitando erros 404 de modelos aposentados.
+- **Onboarding e guias diretos nas Configurações:** links clicáveis para criar chaves grátis no Groq, Google AI Studio e Fish Audio, explicação clara de como instalar skins, e aviso amigável na 1ª abertura caso nenhuma IA esteja configurada.
+- **Guia explícito para iniciantes no `README.md`:** passo a passo completo de download (só o `.zip`), configuração de IA, voz, microfone e skins.
+
+### Correções
+- **Gemini `400 Bad Request` corrigido:** `reasoning_effort: "none"` agora só é enviado para `gemini-2.5-flash` (não-lite), liberando `gemini-3.5-flash-lite` e demais modelos.
+- **Presets atualizados:** Google Gemini (`gemini-3.5-flash-lite`) e Groq (`llama-3.1-8b-instant`).
+
+---
+
 ## [1.3.0] - 2026-11-24
 
 ### Novos Recursos

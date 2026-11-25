@@ -970,6 +970,7 @@ pub fn run() {
             brain::read_clipboard,
             brain::check_services_health,
             actions::open_app,
+            actions::close_app,
             actions::open_url,
             actions::media_control,
             actions::play_spotify,

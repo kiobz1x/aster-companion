@@ -198,6 +198,7 @@ Toda resposta DEVE começar com [MOOD: idle], [MOOD: smug] ou [MOOD: angry].
 
 Tags disponíveis:
 - [OPEN_APP: nome] -> brave, vivaldi, discord, spotify, whatsapp, vscode, steam, calculadora, notepad, explorador, terminal, configuracoes
+- [CLOSE_APP: nome] -> fecha apps abertos (spotify, discord, whatsapp, brave, chrome, edge, vivaldi, firefox, navegador, vscode, steam, calculadora, notepad, obs, vlc, telegram, terminal)
 - [OPEN_URL: https://...] -> abre qualquer site ou busca no navegador
 - [SPOTIFY_PLAY: nome da musica ou artista] -> abre o Spotify e toca a música
 - [WPP: contato | mensagem] -> envia mensagem no WhatsApp
@@ -1146,6 +1147,10 @@ function runLocalActions(rawText) {
     invoke('open_app', { name: m[1].trim() }).catch((e) => console.error('[open_app]', e));
   }
 
+  for (const m of rawText.matchAll(/\[CLOSE_APP:\s*(.+?)\]/gi)) {
+    invoke('close_app', { name: m[1].trim() }).catch((e) => console.error('[close_app]', e));
+  }
+
   for (const m of rawText.matchAll(/\[SPOTIFY_PLAY:\s*(.+?)\]/gi)) {
     setMood('music');
     invoke('play_spotify', { query: m[1].trim() }).catch((e) => console.error('[play_spotify]', e));
@@ -1441,7 +1446,18 @@ async function tryDirectLocalCommand(message) {
     }
   }
 
-  // 5. Abrir apps simples
+  // 5. Abrir / fechar apps simples
+  const closeAppMatch = trimmed.match(/^(?:fecha|fechar|encerra|encerrar)\s+(?:o\s+|a\s+|meu\s+|minha\s+)?([a-zA-ZÀ-ÿ0-9\s._-]+)$/i);
+  if (closeAppMatch) {
+    const appName = closeAppMatch[1].trim();
+    try {
+      const msg = await invoke('close_app', { name: appName });
+      return `[MOOD: idle] ${msg || `Fechando ${appName}.`}`;
+    } catch (e) {
+      return `[MOOD: angry] ${e}`;
+    }
+  }
+
   const openAppMatch = trimmed.match(/^(?:abre|abrir|inicia|iniciar)\s+(?:o\s+|a\s+|meu\s+|minha\s+)?([a-zA-ZÀ-ÿ0-9\s._-]+)$/i);
   if (openAppMatch) {
     const appName = openAppMatch[1].trim();
@@ -2186,7 +2202,7 @@ async function speakText(rawText, forceVoice = false) {
   }
 
   const cleanText = rawText
-    .replace(/\[(MOOD|OPEN_APP|OPEN_URL|SPOTIFY_PLAY|WPP|DISCORD_DM|MEDIA|REMEMBER|DELEGATE):[^\]]+\]/gi, '')
+    .replace(/\[(MOOD|OPEN_APP|CLOSE_APP|OPEN_URL|SPOTIFY_PLAY|WPP|DISCORD_DM|MEDIA|REMEMBER|DELEGATE):[^\]]+\]/gi, '')
     .trim();
 
   const textToShow = cleanText || '...';
@@ -2393,7 +2409,7 @@ async function askAster(message) {
       const openThink = s.indexOf('<think>');
       if (openThink !== -1) s = s.slice(0, openThink);
       // Remove tags completas [MOOD: ...], [OPEN_APP: ...], etc.
-      s = s.replace(/\[(MOOD|OPEN_APP|OPEN_URL|SPOTIFY_PLAY|WPP|DISCORD_DM|MEDIA|REMEMBER|DELEGATE):[^\]]+\]/gi, '');
+      s = s.replace(/\[(MOOD|OPEN_APP|CLOSE_APP|OPEN_URL|SPOTIFY_PLAY|WPP|DISCORD_DM|MEDIA|REMEMBER|DELEGATE):[^\]]+\]/gi, '');
       // Esconde qualquer tag parcial ainda sendo recebida no final (ex: "[MOOD: sm")
       const lastOpen = s.lastIndexOf('[');
       if (lastOpen !== -1 && s.indexOf(']', lastOpen) === -1) {
@@ -2483,7 +2499,7 @@ async function askAster(message) {
       setMood(mood);
 
       const cleanFinal = reply
-        .replace(/\[(MOOD|OPEN_APP|OPEN_URL|SPOTIFY_PLAY|WPP|DISCORD_DM|MEDIA|REMEMBER|DELEGATE):[^\]]+\]/gi, '')
+        .replace(/\[(MOOD|OPEN_APP|CLOSE_APP|OPEN_URL|SPOTIFY_PLAY|WPP|DISCORD_DM|MEDIA|REMEMBER|DELEGATE):[^\]]+\]/gi, '')
         .trim();
       speechText.textContent = cleanFinal || '...';
       speechBubble.scrollTop = speechBubble.scrollHeight;
@@ -2766,3 +2782,15 @@ scheduleNextChatter(210000);
 // Inicia mostrando saudação por 6s e depois recolhe para o modo tela limpa
 scheduleBubbleAutoHide(6500);
 scheduleChatAutoHide(6500);
+
+// Aviso amigável na 1ª abertura caso nenhuma IA esteja configurada/ativa
+setTimeout(async () => {
+  if (!invoke) return;
+  try {
+    const h = await invoke('check_services_health');
+    if (h && !h.ollama_ok && !h.cloud_configured) {
+      openChat(false);
+      showBubble('Oi! Pra começar a conversar, clica na engrenagem abaixo → Cérebro (IA) e cola uma chave grátis do Groq ou Gemini (ou inicia o Ollama).', 15000);
+    }
+  } catch (_) {}
+}, 1600);

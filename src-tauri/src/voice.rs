@@ -174,15 +174,28 @@ fn next_temp_path(prefix: &str, ext: &str) -> PathBuf {
     std::env::temp_dir().join(format!("{prefix}_{pid}_{id}.{ext}"))
 }
 
+fn has_groq_stt(cfg: &AppConfig) -> bool {
+    !cfg.cloud_api_key.is_empty()
+        && (cfg.cloud_url.contains("api.groq.com") || cfg.cloud_api_key.starts_with("gsk_"))
+}
+
 #[tauri::command]
 pub async fn init_voice(manager: State<'_, Arc<VoiceManager>>) -> Result<VoiceInitStatus, String> {
-    let mgr_w = Arc::clone(manager.inner());
     let cfg = AppConfig::load();
+    if has_groq_stt(&cfg) {
+        return Ok(VoiceInitStatus {
+            whisper_model: "groq-whisper-v3-turbo".to_string(),
+            whisper_ready: true,
+        });
+    }
 
+    let mgr_w = Arc::clone(manager.inner());
     let w_res = tauri::async_runtime::spawn_blocking(move || mgr_w.ensure_whisper())
         .await
         .map_err(|e| format!("Erro interno Whisper: {e}"))?;
-    w_res?;
+    w_res.map_err(|e| {
+        format!("{e} — Dica: configure uma chave grátis do Groq em Cérebro (IA) para usar o microfone sem precisar de Python!")
+    })?;
 
     Ok(VoiceInitStatus {
         whisper_model: cfg.whisper_model,
@@ -195,6 +208,46 @@ pub async fn transcribe_audio(
     manager: State<'_, Arc<VoiceManager>>,
     wav_base64: String,
 ) -> Result<String, String> {
+    let cfg = AppConfig::load();
+    if has_groq_stt(&cfg) {
+        let bytes = BASE64
+            .decode(wav_base64.trim())
+            .map_err(|e| format!("WAV inválido: {e}"))?;
+        let part = reqwest::multipart::Part::bytes(bytes)
+            .file_name("audio.wav")
+            .mime_str("audio/wav")
+            .map_err(|e| format!("Erro MIME WAV: {e}"))?;
+        let form = reqwest::multipart::Form::new()
+            .part("file", part)
+            .text("model", "whisper-large-v3-turbo")
+            .text("language", "pt")
+            .text("response_format", "json");
+
+        let res = manager
+            .http
+            .post("https://api.groq.com/openai/v1/audio/transcriptions")
+            .header("Authorization", format!("Bearer {}", cfg.cloud_api_key))
+            .multipart(form)
+            .send()
+            .await
+            .map_err(|e| format!("Erro Groq Whisper: {e}"))?;
+
+        if !res.status().is_success() {
+            let st = res.status();
+            let err_txt = res.text().await.unwrap_or_default();
+            return Err(format!(
+                "Groq Whisper HTTP {st}: {}",
+                err_txt.chars().take(120).collect::<String>()
+            ));
+        }
+
+        let body: serde_json::Value = res
+            .json()
+            .await
+            .map_err(|e| format!("Resposta inválida Groq Whisper: {e}"))?;
+        return Ok(body["text"].as_str().unwrap_or("").trim().to_string());
+    }
+
     let mgr = Arc::clone(manager.inner());
     tauri::async_runtime::spawn_blocking(move || {
         let bytes = BASE64

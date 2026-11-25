@@ -308,6 +308,13 @@
       color: var(--accent-soft);
     }
     .field small { font-size: 11px; color: #71717a; }
+    .help-link {
+      color: var(--accent-soft);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      cursor: pointer;
+    }
+    .help-link:hover { color: var(--accent-text); }
 
     .grid-2 {
       display: grid;
@@ -575,7 +582,7 @@
       </div>
       <div class="brand-info">
         <h1>Aster</h1>
-        <span>Companion v1.3.0</span>
+        <span>Companion v1.3.1</span>
       </div>
     </div>
 
@@ -705,6 +712,7 @@
                 <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
             </div>
+            <small>Chave grátis: <a class="help-link" data-open-url="https://console.groq.com/keys">Groq (recomendado + libera microfone sem Python)</a> · <a class="help-link" data-open-url="https://aistudio.google.com/apikey">Google AI Studio</a>. Depois clique em <strong>Listar modelos</strong> e <strong>Testar IA</strong>.</small>
           </div>
           <details class="adv-box">
             <summary>Avançado (Endpoint URL)</summary>
@@ -752,6 +760,7 @@
               <input id="fish_voice_id" type="text" placeholder="reference_id da voz" />
             </div>
           </div>
+          <small style="font-size:11px;color:#a1a1aa">Crie sua chave e escolha uma voz em <a class="help-link" data-open-url="https://fish.audio">fish.audio</a> (o ID da voz fica na URL do modelo escolhido).</small>
           <div class="field">
             <div class="row" style="justify-content:space-between">
               <label for="tts_volume">Volume</label>
@@ -776,15 +785,16 @@
         </div>
 
         <div class="glass-card">
-          <div class="card-section-title">Microfone (Escuta offline)</div>
+          <div class="card-section-title">Microfone (Escuta por voz)</div>
           <div class="field">
-            <label for="whisper_model">Precisão do reconhecimento (Whisper CPU)</label>
+            <label for="whisper_model">Precisão do reconhecimento offline (Whisper CPU)</label>
             <select id="whisper_model">
               <option value="tiny">tiny — ultra rápido (~100 MB)</option>
               <option value="base">base — equilibrado (recomendado)</option>
               <option value="small">small — mais preciso em PT-BR (~460 MB)</option>
               <option value="medium">medium — máxima precisão (mais pesado)</option>
             </select>
+            <small>Se você usa <strong>Groq</strong> em Cérebro (IA), o microfone funciona direto pela nuvem (sem instalar Python). Senão, usa o Whisper offline acima.</small>
           </div>
         </div>
       </section>
@@ -820,6 +830,7 @@
               <span>Atualizar</span>
             </button>
           </div>
+          <small style="font-size:11px;color:#a1a1aa">Para instalar uma skin baixada: clique em <strong>Abrir pasta skins</strong>, cole a pasta da skin lá dentro e clique em <strong>Atualizar</strong>.</small>
           <div id="skins-list" class="mem-list"></div>
           <details class="adv-box" style="border-top:none;padding-top:2px">
             <summary>Opções do importador (Beta)</summary>
@@ -1678,6 +1689,14 @@
       document.getElementById('rem-mins-input').value = '';
       document.getElementById('rem-label-input').value = '';
       setStatus(`Lembrete agendado para daqui a ${mins} min.`);
+    });
+
+    document.querySelectorAll('[data-open-url]').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = a.getAttribute('data-open-url');
+        if (url) invoke?.('open_url', { url })?.catch(() => {});
+      });
     });
 
     loadSettings();
