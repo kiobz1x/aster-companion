@@ -745,16 +745,24 @@ fn spawn_global_hotkey(app_handle: tauri::AppHandle) {
     const MOD_ALT: u32 = 0x0001;
     const MOD_NOREPEAT: u32 = 0x4000;
     const VK_A: u32 = 0x41;
+    const VK_V: u32 = 0x56;
     const WM_HOTKEY: u32 = 0x0312;
 
     std::thread::spawn(move || unsafe {
-        if RegisterHotKey(std::ptr::null_mut(), 1, MOD_ALT | MOD_NOREPEAT, VK_A) == 0 {
+        let ok_a = RegisterHotKey(std::ptr::null_mut(), 1, MOD_ALT | MOD_NOREPEAT, VK_A) != 0;
+        let ok_v = RegisterHotKey(std::ptr::null_mut(), 2, MOD_ALT | MOD_NOREPEAT, VK_V) != 0;
+        if !ok_a && !ok_v {
             return;
         }
         let mut msg = std::mem::zeroed::<Msg>();
         while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
             if msg.message == WM_HOTKEY && msg.wparam == 1 {
                 open_chat_window(&app_handle);
+            } else if msg.message == WM_HOTKEY && msg.wparam == 2 {
+                if let Some(win) = app_handle.get_webview_window("main") {
+                    let _ = win.show();
+                    let _ = win.emit("aster-voice-push", ());
+                }
             }
         }
     });

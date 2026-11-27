@@ -471,6 +471,41 @@ if (tauriEvent?.listen) {
     triggerBounce();
     openChat(true);
   });
+  tauriEvent.listen('aster-voice-push', async () => {
+    if (voiceInitInProgress || isThinking) return;
+    stopWalking();
+    resetIdleTimer();
+    triggerBounce();
+    try {
+      if (!voiceEnabled) {
+        directVoiceOneshot = true;
+        voiceEnabled = true;
+        micBtn.classList.add('listening');
+        micIndicator?.classList.add('active');
+        if (!voiceWorkersReady) {
+          voiceInitInProgress = true;
+          showBubble('⏳ Iniciando microfone...', 0);
+          await invoke('init_voice');
+          voiceWorkersReady = true;
+          voiceInitInProgress = false;
+        }
+        await startMicCapture();
+      }
+      awaitingCommand = true;
+      awaitingUntil = Date.now() + WAKE_WINDOW_MS;
+      sprite.src = SPRITES.listen;
+      playVoiceBeep(740, 0.12);
+      showBubble('🎙️ Pode falar direto... (Alt+V)', 16000);
+    } catch (err) {
+      voiceInitInProgress = false;
+      directVoiceOneshot = false;
+      voiceEnabled = false;
+      micBtn.classList.remove('listening');
+      micIndicator?.classList.remove('active');
+      setMood('angry');
+      showBubble(`Erro na voz: ${err?.message || err}`, 9000);
+    }
+  });
   tauriEvent.listen('aster-toggle-roam', () => {
     roamingEnabled = !roamingEnabled;
     if (!roamingEnabled) {
@@ -514,10 +549,17 @@ sprite.addEventListener('load', syncHitRects);
 setTimeout(syncHitRects, 150);
 
 // Arrastar janela e animações
+let bounceTimer = null;
 function triggerBounce() {
+  clearTimeout(bounceTimer);
   wrapper.classList.remove('bounce');
   void wrapper.offsetWidth;
   wrapper.classList.add('bounce');
+  // Remove .bounce ao terminar (0.42s) para não sobrescrever .music-groove nem breathe!
+  bounceTimer = setTimeout(() => {
+    wrapper.classList.remove('bounce');
+    bounceTimer = null;
+  }, 450);
 }
 
 function setMood(mood) {
@@ -536,7 +578,8 @@ function resetIdleTimer() {
   }
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => {
-    if (!isSpeaking && !ttsPlaying && !isWalking) {
+    // Não dorme enquanto está curtindo música
+    if (!isSpeaking && !ttsPlaying && !isWalking && !(nowPlaying.playing && currentMood === 'music')) {
       wrapper.classList.add('sleeping');
       setMood('sleepy');
     }
@@ -1489,17 +1532,18 @@ const FRAME_MS = (VOICE_FRAME / SAMPLE_RATE) * 1000;
 const PREROLL_FRAMES = 4;
 const START_FRAMES = 2;
 const MIN_VOICED_FRAMES = 3;
-const END_SILENCE_MS = 750;
-const MAX_PHRASE_MS = 9000;
+const END_SILENCE_MS = 1600;
+const MAX_PHRASE_MS = 15000;
 const MIN_START_RMS = 0.008;
 const MIN_KEEP_RMS = 0.005;
-const WAKE_WINDOW_MS = 12000;
+const WAKE_WINDOW_MS = 16000;
 
 let voiceEnabled = false;
 let voiceWorkersReady = false;
 let voiceInitInProgress = false;
 let awaitingCommand = false;
 let awaitingUntil = 0;
+let directVoiceOneshot = false;
 
 let micStream = null;
 let micAudioCtx = null;
@@ -1892,8 +1936,29 @@ function scheduleNextChatter(customDelayMs) {
 
 // Palavras de ativação ("Aster") - sem 'estar' para evitar falso positivo
 const WAKE_WORDS = new Set([
-  'aster', 'astor', 'asther', 'esther', 'ester', 'haster', 'hastor', 'asta', 'aste', 'astra', 'astre',
+  'aster', 'asters', 'astor', 'asther', 'esther', 'ester', 'haster', 'hastor',
+  'asta', 'aste', 'astra', 'astre', 'aces', 'after', 'easter', 'master',
 ]);
+
+function playVoiceBeep(freq = 740, durSec = 0.11) {
+  try {
+    const ctx = ttsAudioCtx || new AudioContext();
+    if (!ttsAudioCtx) ttsAudioCtx = ctx;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.04, Math.min(0.22, ttsVolume * 0.25)), now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + durSec);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + durSec + 0.02);
+  } catch (_) {}
+}
 
 function normWord(s) {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '');
@@ -1948,6 +2013,14 @@ function handleSpokenText(transcript) {
 
   if (awaitingCommand) {
     awaitingCommand = false;
+    const wasOneshot = directVoiceOneshot;
+    directVoiceOneshot = false;
+    if (wasOneshot) {
+      voiceEnabled = false;
+      micBtn.classList.remove('listening');
+      micIndicator?.classList.remove('active');
+      stopMicCapture();
+    }
     if (Date.now() < awaitingUntil) {
       runVoiceCommand(clean);
       return;
@@ -1956,7 +2029,7 @@ function handleSpokenText(transcript) {
 
   const command = findWake(clean);
   if (command === null) {
-    showBubble(`👂 Ouvi "${clean}" (diga "Aster" antes)`, 4500);
+    showBubble(`👂 Ouvi "${clean}" (diga "Aster" antes ou use Alt+V)`, 4500);
     return;
   }
 
@@ -1969,8 +2042,9 @@ function handleSpokenText(transcript) {
     isListeningVoice = true;
     resetIdleTimer();
     triggerBounce();
+    playVoiceBeep(780, 0.12);
     sprite.src = SPRITES.listen;
-    showBubble(`Tô ouvindo${vocative()}. Manda.`, 12000);
+    showBubble(`Tô ouvindo${vocative()}. Manda.`, 16000);
     speakVoice('Tô ouvindo.');
   }
 }

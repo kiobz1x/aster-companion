@@ -221,6 +221,7 @@ pub async fn transcribe_audio(
             .part("file", part)
             .text("model", "whisper-large-v3-turbo")
             .text("language", "pt")
+            .text("prompt", "Aster, abrir Spotify, Discord, WhatsApp, Stardew Valley, tocar música, lembrete, Pomodoro.")
             .text("response_format", "json");
 
         let res = manager

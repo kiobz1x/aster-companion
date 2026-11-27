@@ -13,7 +13,8 @@ Referência completa de todos os comandos slash (`/`), comandos por frase natura
 | Mover / sentar na janela | Arrastar a Aster com o mouse | Move pela tela com física de pêndulo; soltar perto do topo de uma janela aberta faz ela sentar na borda |
 | Chacoalhar | Sacudir rápido enquanto arrasta | Reação irritada (`angry`) com fala |
 | Carinho (*headpat*) | Passar o mouse repetidamente no topo da cabeça | Solta partículas e uma resposta aleatória |
-| Comando por voz | Ativar microfone e dizer `"Aster ..."` | Transcreve offline (Whisper) e executa qualquer comando abaixo |
+| Comando por voz (direto) | `Alt + V` (global, de qualquer janela ou jogo) | Toca um bip suave e escuta seu comando **direto** (sem precisar clicar na Aster nem dizer `"Aster"`) |
+| Comando por voz (contínuo) | Ativar microfone e dizer `"Aster ..."` | Transcreve via Groq Whisper ou Whisper offline e executa qualquer comando abaixo |
 | Bandeja do Windows | Clique direito no ícone da Aster (System Tray) | Acesso rápido a Chat, Configurações, Passeio automático, Falas espontâneas, Iniciar com o Windows, Sempre no topo, Mostrar/Esconder e Sair |
 
 ---

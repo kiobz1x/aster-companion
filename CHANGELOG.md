@@ -2,6 +2,18 @@
 
 Todas as mudanças relevantes do projeto são documentadas neste arquivo.
 
+## [1.3.6] - 2026-11-27
+
+### Voz & Atalhos
+- **Atalho global `Alt + V` (falar direto):** de qualquer tela ou jogo, aperta `Alt + V`, ouve um bip suave e fala o comando direto (sem clicar na Aster e sem precisar dizer `"Aster"`). Se o microfone não estava ligado antes, desliga automaticamente após o comando.
+- **Mais tempo de pausa ao falar:** silêncio de corte aumentado de `0,75s` para `1,6s`, duração máxima da frase de `9s` para `15s` e janela de escuta para `16s`.
+- **Reconhecimento de `"Aster"` aprimorado:** adicionado `prompt` de vocabulário no Groq Whisper e novas variações tolerantes na wake-word + bip suave ao ativar.
+
+### Correções
+- **Balanço no modo música (`musicGroove`) corrigido:** removida a classe `.bounce` após `450ms` (antes ficava presa e sobrescrevia a animação de música e respiração), impedido o modo sono (`sleepy`) durante reprodução de música e ajustado o balanço para ficar visivelmente mais fluido (`±2.2°`).
+
+---
+
 ## [1.3.5] - 2026-11-27
 
 ### Novos Recursos
