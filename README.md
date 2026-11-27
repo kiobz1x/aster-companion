@@ -61,6 +61,7 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 1. Extraia o `.zip` — ele já cria uma pasta organizada **`Aster-Companion\`** com tudo dentro.
 2. Abra o **`Aster.exe`** *(ou rode o **`Instalar_Extras.bat`** se quiser criar atalho na Área de Trabalho e instalar microfone offline / importador de skins com 1 clique)*.
    * *Se o Windows mostrar o aviso azul do SmartScreen na 1ª vez:* clique em **Mais informações → Executar assim mesmo**.
+   * *Se o Windows Defender bloquear (falso positivo comum em `.exe` indie sem certificado pago):* abra **Segurança do Windows → Proteção contra vírus e ameaças → Gerenciar configurações → Exclusões → Adicionar pasta** e selecione a pasta `Aster-Companion`. O código-fonte é 100% aberto aqui no GitHub para conferência.
 
 ### 2. Ativar a Inteligência Artificial (grátis, leva 1 minuto)
 Clique no ícone de engrenagem (ou digite `/config`) → aba **Cérebro (IA)**:
@@ -186,7 +187,16 @@ Aster-Companion/
 
 ---
 
+## Privacidade
+
+* A Aster Companion **não coleta telemetria, analytics nem envia dados para servidores próprios**.
+* Todas as chaves de API (`.env`), memórias (`memory.json`), documentos (`docs/`) e skins ficam armazenados **100% localmente** no seu PC.
+* Requisições externas ocorrem apenas para os serviços que o próprio usuário configurar (ex.: Groq, Google Gemini, OpenAI, Fish Audio, Discord Webhook) e para a verificação opcional de atualizações no GitHub Releases.
+
+---
+
 ## Licença & Créditos
 
-* Código-fonte inspirado em [capri-desktop](https://github.com/lachydotmcg/capri-desktop).
-* **Uso pessoal / portfólio:** fique à vontade para estudar e adaptar o código; os sprites e a identidade visual da personagem **Aster** são de uso pessoal.
+* **Código-fonte:** distribuído sob a [MIT License](LICENSE).
+* **Arte e identidade visual:** os sprites originais e a identidade visual da personagem **Aster** são de uso pessoal / não comercial.
+* Inspirado no projeto open-source [capri-desktop](https://github.com/lachydotmcg/capri-desktop).
