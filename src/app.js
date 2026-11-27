@@ -1479,26 +1479,42 @@ async function tryDirectLocalCommand(message) {
     return '[MOOD: idle] Baixei o volume.';
   }
 
-  // 3. WhatsApp direto
+  const normContact = (s) =>
+    String(s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  const hasMemoryForContact = (name) => {
+    const q = normContact(name);
+    if (q.length < 2 || !savedMemories.length) return false;
+    return savedMemories.some((fact) => normContact(fact).includes(q));
+  };
+
+  // 3. WhatsApp direto (se houver apelido/memória pro contato, deixa a IA resolver!)
   const wppRegex = /(?:whatsapp|wpp|zap).*?(?:pro|pra|para)\s+([a-zA-ZÀ-ÿ0-9_\s]+?)\s+(?:dizendo|falando|que|:)\s+(.+)/i;
   const wppAlt = /(?:manda|mandar|envia|enviar)\s+(?:uma\s+)?(?:mensagem\s+)?(?:pro|pra|para)\s+([a-zA-ZÀ-ÿ0-9_\s]+?)\s+(?:no\s+(?:whatsapp|wpp|zap)\s+)?(?:dizendo|falando|que|:)\s+(.+)/i;
   const wppMatch = trimmed.match(wppRegex) || trimmed.match(wppAlt);
-  if (wppMatch && !/discord/i.test(trimmed)) {
-    const contato = wppMatch[1].trim();
+  if (wppMatch && !/\b(?:discord|dc)\b/i.test(trimmed)) {
+    const contato = wppMatch[1].replace(/\s+(?:no|na|pelo)\s+(?:whatsapp|wpp|zap)$/i, '').trim();
     const texto = wppMatch[2].trim();
-    await invoke('send_whatsapp', { contact: contato, message: texto });
-    return `[MOOD: smug] Abrindo o WhatsApp e mandando "${texto}" pro ${contato}.`;
+    if (!hasMemoryForContact(contato)) {
+      await invoke('send_whatsapp', { contact: contato, message: texto });
+      return `[MOOD: smug] Abrindo o WhatsApp e mandando "${texto}" pro ${contato}.`;
+    }
   }
 
-  // 4. Discord DM direto (aceita "discord" ou "dc")
+  // 4. Discord DM direto (aceita "discord" ou "dc"; se houver apelido/memória pro contato, deixa a IA resolver!)
   if (/\b(?:discord|dc)\b/i.test(trimmed) && /(?:conversa\s+com|pro|pra|para|dm)\s+/i.test(trimmed)) {
     const dmRegex = /(?:conversa\s+com|pro|pra|para|dm\s+(?:pro|pra|para)?)\s+([a-zA-ZÀ-ÿ0-9_.\s]+?)(?:\s+e\s+(?:envia|enviar|manda|mandar|diz|diga)|\s+(?:dizendo|falando|que|:))\s+(.+)/i;
     const dmMatch = trimmed.match(dmRegex);
     if (dmMatch) {
-      const usuario = dmMatch[1].trim();
+      const usuario = dmMatch[1].replace(/\s+(?:no|na|pelo)\s+(?:discord|dc)$/i, '').trim();
       const texto = dmMatch[2].trim();
-      await invoke('send_discord_dm', { user: usuario, message: texto });
-      return `[MOOD: smug] Abrindo o Discord, puxando a DM com ${usuario} e mandando "${texto}".`;
+      if (!hasMemoryForContact(usuario)) {
+        await invoke('send_discord_dm', { user: usuario, message: texto });
+        return `[MOOD: smug] Abrindo o Discord, puxando a DM com ${usuario} e mandando "${texto}".`;
+      }
     }
   }
 
