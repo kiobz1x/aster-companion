@@ -4,8 +4,10 @@ Todas as mudanças relevantes do projeto são documentadas neste arquivo.
 
 ## [1.3.7] - 2026-11-27
 
-### Melhorias
+### Melhorias & Correções
 - **Pomodoro & Timers com unidades flexíveis:** adicionado seletor `min / h / seg` ao lado do campo de tempo e parser inteligente que reconhece diretamente `2h`, `30s`, `15m`, `1h30m` ou horário fixo (`22:30`).
+- **Apelidos da memória no Discord & WhatsApp:** ao pedir pra mandar mensagem usando um apelido salvo na Memória (ex.: *"João"* → nick fixo `"arrozefarinha"`), a Aster agora consulta suas memórias antes do atalho local.
+- **Abrir sites/pedidos compostos sem erro `Win32:2`:** pedidos como *"abre o docs no vivaldi"*, *"abre o youtube"* ou qualquer item que não seja um programa/jogo instalado agora passam automaticamente pra IA abrir a URL certa.
 
 ---
 
