@@ -1533,8 +1533,15 @@ async function tryDirectLocalCommand(message) {
   const openAppMatch = trimmed.match(/^(?:abre|abrir|inicia|iniciar)\s+(?:o\s+|a\s+|meu\s+|minha\s+)?([a-zA-ZÀ-ÿ0-9\s._-]+)$/i);
   if (openAppMatch) {
     const appName = openAppMatch[1].trim();
-    await invoke('open_app', { name: appName });
-    return `[MOOD: idle] Abrindo ${appName}.`;
+    const looksLikeWebOrComplex = /\b(?:no|na|pelo|site|link|google|youtube|docs|gmail|drive|instagram|twitch|netflix|chatgpt|github)\b/i.test(appName);
+    if (!looksLikeWebOrComplex) {
+      try {
+        await invoke('open_app', { name: appName });
+        return `[MOOD: idle] Abrindo ${appName}.`;
+      } catch (_) {
+        // Se não achou programa/jogo da Steam, deixa a IA resolver (ex: abrir URL/site)
+      }
+    }
   }
 
   return null;
