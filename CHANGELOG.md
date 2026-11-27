@@ -2,6 +2,19 @@
 
 Todas as mudanças relevantes do projeto são documentadas neste arquivo.
 
+## [1.3.3] - 2026-11-27
+
+### Performance & Jogos
+- **Modo Jogo Leve automático (`body.game-perf`):** ao detectar League of Legends, jogos conhecidos ou janelas em tela cheia, desativa `backdrop-filter: blur()`, `drop-shadow` do sprite, animação contínua `breathe`, partículas e tilt no `mousemove` para não competir com o FPS do jogo no DWM do Windows.
+- **Lip-sync 90% mais leve:** trocado de `requestAnimationFrame` (60–144×/s) para intervalo de `120ms` (~8×/s) com o mesmo visual, reduzindo uso de GPU do WebView2 durante a fala.
+- **Menos IPC durante a digitação:** `ResizeObserver` pausado enquanto a Aster escreve no balão.
+
+### Correções
+- **Ollama sob demanda:** `ensure_ollama_running()` não inicia mais o Ollama em segundo plano quando o motor escolhido é **Na Nuvem**.
+- **Erro real da Nuvem preservado:** se a API na Nuvem falhar e o Ollama local não estiver ligado, exibe o erro real da Nuvem (ex.: `429` / `503`) em vez de mostrar *"Ollama desligado"*.
+
+---
+
 ## [1.3.1] - 2026-11-25
 
 ### Novos Recursos & Melhorias

@@ -272,10 +272,21 @@ let chatterTimer = null;
 let ttsVolume = 0.7;
 let currentUiTheme = 'gothic';
 let particlesEnabled = true;
+let gamePerfMode = false;
 const ambientLayer = document.getElementById('ambient-particles');
 
+function setGamePerfMode(active) {
+  const next = Boolean(active);
+  if (next === gamePerfMode) return;
+  gamePerfMode = next;
+  document.body.classList.toggle('game-perf', gamePerfMode);
+  if (gamePerfMode && ambientLayer) {
+    ambientLayer.innerHTML = '';
+  }
+}
+
 function spawnAmbientParticle() {
-  if (document.hidden || !ambientLayer || !particlesEnabled || wrapper.classList.contains('sleeping')) return;
+  if (document.hidden || gamePerfMode || !ambientLayer || !particlesEnabled || wrapper.classList.contains('sleeping')) return;
   if (ambientLayer.childElementCount >= 7) return;
 
   const isNatal = /natal/i.test(currentSkinId || '');
@@ -494,7 +505,9 @@ if (tauriEvent?.listen) {
   });
 }
 
-const ro = new ResizeObserver(() => syncHitRects());
+const ro = new ResizeObserver(() => {
+  if (!isSpeaking) syncHitRects();
+});
 HIT_ELEMENTS.forEach((el) => ro.observe(el));
 window.addEventListener('resize', syncHitRects);
 sprite.addEventListener('load', syncHitRects);
@@ -928,7 +941,7 @@ wrapper.addEventListener('mousedown', (e) => {
 });
 
 window.addEventListener('mousemove', (e) => {
-  if (wrapper.classList.contains('sleeping') || isWalking || isDragging || pendulumRaf) return;
+  if (gamePerfMode || wrapper.classList.contains('sleeping') || isWalking || isDragging || pendulumRaf) return;
   const centerX = window.innerWidth / 2;
   const angle = ((e.clientX - centerX) / centerX) * 2.2;
   sprite.style.setProperty('--tilt', `${angle.toFixed(2)}deg`);
@@ -1498,7 +1511,7 @@ let voiceBusy = false;
 let ttsAudioCtx = null;
 let currentAudioPlayer = null;
 let currentAudioUrl = null;
-let lipSyncRaf = null;
+let lipSyncTimer = null;
 let ttsPending = false;
 let ttsPlaying = false;
 let ttsPendingTimer = null;
@@ -1591,9 +1604,9 @@ function stopCurrentAudio() {
   ttsSessionId++;
   ttsQueue = [];
   ttsQueueRunning = false;
-  if (lipSyncRaf) {
-    cancelAnimationFrame(lipSyncRaf);
-    lipSyncRaf = null;
+  if (lipSyncTimer) {
+    clearInterval(lipSyncTimer);
+    lipSyncTimer = null;
   }
   if (currentAudioPlayer) {
     try {
@@ -1649,7 +1662,13 @@ async function playTtsPayload(audioBase64, mime, { clearQueue = true } = {}) {
     const MIN_HOLD_MS = 240; // evita piscar rápido (troca suave e natural)
 
     const tick = () => {
-      if (!ttsPlaying || currentAudioPlayer !== audio || audio.paused || audio.ended) return;
+      if (!ttsPlaying || currentAudioPlayer !== audio || audio.paused || audio.ended) {
+        if (lipSyncTimer) {
+          clearInterval(lipSyncTimer);
+          lipSyncTimer = null;
+        }
+        return;
+      }
       analyser.getByteTimeDomainData(timeData);
       let sum = 0;
       for (let i = 0; i < timeData.length; i++) sum += Math.abs(timeData[i] - 128);
@@ -1670,15 +1689,15 @@ async function playTtsPayload(audioBase64, mime, { clearQueue = true } = {}) {
           sprite.src = SPRITES[currentMood] || SPRITES.idle;
         }
       }
-      lipSyncRaf = requestAnimationFrame(tick);
     };
-    lipSyncRaf = requestAnimationFrame(tick);
+    if (lipSyncTimer) clearInterval(lipSyncTimer);
+    lipSyncTimer = setInterval(tick, 120);
   };
 
   const finish = () => {
-    if (lipSyncRaf) {
-      cancelAnimationFrame(lipSyncRaf);
-      lipSyncRaf = null;
+    if (lipSyncTimer) {
+      clearInterval(lipSyncTimer);
+      lipSyncTimer = null;
     }
     try { srcNode?.disconnect(); } catch (_) {}
     try { analyser?.disconnect(); } catch (_) {}
@@ -2631,16 +2650,18 @@ async function pollNowPlaying() {
 }
 
 async function pollLolGame() {
-  if (!invoke || !lolEnabled || document.hidden) return;
+  if (!invoke || document.hidden) return;
   try {
-    // 1. Detecta jogos conhecidos pela janela ativa (Valorant, CS2, Minecraft, Elden Ring, etc.)
+    // 1. Detecta tela cheia / jogos conhecidos pela janela ativa (ativa Modo Jogo Leve automaticamente)
+    let isFullscreenApp = false;
     try {
       const ctx = await invoke('get_active_window_context');
+      isFullscreenApp = Boolean(ctx?.is_fullscreen);
       const detected = ctx?.title ? await invoke('detect_known_game', { windowTitle: ctx.title }) : null;
       if (detected) {
         activeGameName = detected;
         const busyNow = isSpeaking || isThinking || ttsPlaying || ttsPending || isDragging || isListeningVoice;
-        if (!announcedGames.has(detected) && !busyNow && spontaneousEnabled && Date.now() - lastLolCommentAt > 25000) {
+        if (lolEnabled && !announcedGames.has(detected) && !busyNow && spontaneousEnabled && Date.now() - lastLolCommentAt > 25000) {
           announcedGames.add(detected);
           lastLolCommentAt = Date.now();
           await speakText(`[MOOD: smug] ${detected} aberto! Boa partida${vocative()} — vou ficar de olho.`, true);
@@ -2650,14 +2671,21 @@ async function pollLolGame() {
       }
     } catch (_) {}
 
+    if (!lolEnabled) {
+      setGamePerfMode(Boolean(activeGameName || isFullscreenApp));
+      return;
+    }
+
     // 2. API ao vivo oficial do League of Legends (kills, dragão, barão, vitória/derrota)
     const st = await invoke('get_lol_state');
     if (!st || !st.in_game) {
       lolState = { in_game: false, summoner: '', champion: '', kills: 0, deaths: 0, assists: 0 };
       lastLolEventId = -1;
+      setGamePerfMode(Boolean(activeGameName || isFullscreenApp));
       return;
     }
     activeGameName = 'League of Legends';
+    setGamePerfMode(true);
     const wasInGame = lolState.in_game;
     lolState = st;
 

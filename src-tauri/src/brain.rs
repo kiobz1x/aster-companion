@@ -298,14 +298,16 @@ pub async fn chat_ollama_stream(
     let cfg = AppConfig::load();
     let temp = temperature.unwrap_or(0.7);
 
-    // Modo Nuvem com fallback automático para Ollama local se a API falhar
+    // Modo Nuvem com fallback automático para Ollama local se ele já estiver rodando
+    let mut cloud_err: Option<String> = None;
     if cfg.ai_provider.eq_ignore_ascii_case("cloud")
         && !cfg.cloud_api_key.is_empty()
         && !cfg.cloud_url.is_empty()
     {
         match chat_cloud_stream(&app, &cfg, &messages, temp).await {
             Ok(reply) if !reply.is_empty() => return Ok(reply),
-            _ => {}
+            Ok(_) => cloud_err = Some("API na Nuvem retornou resposta vazia.".into()),
+            Err(e) => cloud_err = Some(e),
         }
     }
 
@@ -331,6 +333,9 @@ pub async fn chat_ollama_stream(
     {
         Ok(r) => r,
         Err(e) if e.is_connect() => {
+            if let Some(err) = cloud_err {
+                return Err(err);
+            }
             // Tenta subir o Ollama automaticamente em segundo plano e reconectar 1x
             if ensure_ollama_running().await {
                 client
@@ -345,6 +350,9 @@ pub async fn chat_ollama_stream(
             }
         }
         Err(e) => {
+            if let Some(err) = cloud_err {
+                return Err(err);
+            }
             return Err(if e.is_timeout() {
                 "Ollama demorou demais para responder (timeout).".to_string()
             } else {

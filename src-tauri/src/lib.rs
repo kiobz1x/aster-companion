@@ -933,9 +933,12 @@ pub fn run() {
                 });
             }
 
-            // Garante Ollama rodando em segundo plano sem atrasar a abertura da Aster
+            // Garante Ollama rodando em segundo plano apenas quando o motor escolhido é Ollama local
             tauri::async_runtime::spawn(async {
-                brain::ensure_ollama_running().await;
+                let cfg = config::AppConfig::load();
+                if !cfg.ai_provider.eq_ignore_ascii_case("cloud") {
+                    brain::ensure_ollama_running().await;
+                }
             });
 
             Ok(())

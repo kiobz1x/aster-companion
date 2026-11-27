@@ -308,6 +308,19 @@
       65%  { transform: scaleY(1.04) scaleX(0.97) translateY(-10px); }
       100% { transform: scaleY(1) scaleX(1) translateY(0); }
     }
+
+    /* Modo Jogo Leve: desativa blur/sombras/animação contínua de GPU para não competir com jogos */
+    body.game-perf #speech-bubble,
+    body.game-perf #input-box {
+      backdrop-filter: none !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55) !important;
+    }
+    body.game-perf #aster-sprite {
+      filter: none !important;
+    }
+    body.game-perf #aster-wrapper {
+      animation: none !important;
+    }
   </style>
 </head>
 <body>
