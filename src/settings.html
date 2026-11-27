@@ -974,7 +974,12 @@
           <div class="glass-card">
             <div class="card-section-title">Novo lembrete com voz</div>
             <div class="row">
-              <input id="rem-mins-input" type="text" placeholder="Min (ex: 15)" style="width:95px;flex-shrink:0" />
+              <input id="rem-mins-input" type="text" placeholder="Ex: 15, 2h, 30s, 22:30" style="width:142px;flex-shrink:0" />
+              <select id="rem-unit-sel" style="width:74px;flex-shrink:0" title="Unidade padrão se digitar só número">
+                <option value="m">min</option>
+                <option value="h">h</option>
+                <option value="s">seg</option>
+              </select>
               <input id="rem-label-input" type="text" placeholder="O que lembrar? (ex: beber água, olhar o forno)" />
               <button id="rem-add-btn" class="btn btn-sm" type="button">Agendar</button>
             </div>
@@ -1707,17 +1712,61 @@
       invoke('reminders_send_action', { payload: { action: 'cancel_all' } }).catch(() => {});
       setStatus('Todos os timers cancelados.');
     });
+    function parseReminderInputMs(rawStr, defaultUnit) {
+      const s = String(rawStr || '').trim().toLowerCase().replace(',', '.');
+      if (!s) return 0;
+
+      // Horário fixo tipo "22:30"
+      const clock = s.match(/^(\d{1,2}):(\d{2})$/);
+      if (clock) {
+        const hh = Number(clock[1]);
+        const mm = Number(clock[2]);
+        if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) {
+          const now = new Date();
+          const target = new Date(now);
+          target.setHours(hh, mm, 0, 0);
+          if (target.getTime() <= now.getTime()) target.setDate(target.getDate() + 1);
+          return target.getTime() - now.getTime();
+        }
+        return 0;
+      }
+
+      // Com unidade explícita (suporta composto tipo "1h30m", "20h", "45s", "15m")
+      const unitMatches = [...s.matchAll(/(\d+(?:\.\d+)?)\s*(h|hr|hrs|hora|horas|m|min|mins|minuto|minutos|s|seg|segs|segundo|segundos)\b/gi)];
+      if (unitMatches.length > 0) {
+        let totalMs = 0;
+        for (const m of unitMatches) {
+          const val = Number(m[1]);
+          const u = m[2].toLowerCase();
+          if (!Number.isFinite(val) || val <= 0) continue;
+          if (u.startsWith('h')) totalMs += Math.round(val * 3600 * 1000);
+          else if (u.startsWith('s')) totalMs += Math.round(val * 1000);
+          else totalMs += Math.round(val * 60 * 1000);
+        }
+        return totalMs;
+      }
+
+      // Número puro -> usa a unidade escolhida no seletor (min / h / seg)
+      const num = Number(s);
+      if (!Number.isFinite(num) || num <= 0) return 0;
+      if (defaultUnit === 'h') return Math.round(num * 3600 * 1000);
+      if (defaultUnit === 's') return Math.round(num * 1000);
+      return Math.round(num * 60 * 1000);
+    }
+
     document.getElementById('rem-add-btn').addEventListener('click', () => {
-      const mins = Number(String(document.getElementById('rem-mins-input').value || '').replace(',', '.'));
+      const rawTime = document.getElementById('rem-mins-input').value;
+      const unit = document.getElementById('rem-unit-sel')?.value || 'm';
+      const delayMs = parseReminderInputMs(rawTime, unit);
       const label = document.getElementById('rem-label-input').value.trim();
-      if (!Number.isFinite(mins) || mins <= 0) {
-        setStatus('Informe os minutos (ex: 15).', true);
+      if (!Number.isFinite(delayMs) || delayMs < 1000 || delayMs > 48 * 3600 * 1000) {
+        setStatus('Informe um tempo válido (ex: 15, 2h, 30s, 1h30m ou 22:30).', true);
         return;
       }
-      invoke('reminders_send_action', { payload: { action: 'add', minutes: mins, label } }).catch(() => {});
+      invoke('reminders_send_action', { payload: { action: 'add', delayMs, label } }).catch(() => {});
       document.getElementById('rem-mins-input').value = '';
       document.getElementById('rem-label-input').value = '';
-      setStatus(`Lembrete agendado para daqui a ${mins} min.`);
+      setStatus(`Lembrete agendado para daqui a ${formatCountdown(delayMs)}.`);
     });
 
     document.querySelectorAll('[data-open-url]').forEach((a) => {

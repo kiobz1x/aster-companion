@@ -2812,11 +2812,11 @@ tauriEvent?.listen?.('aster-reminder-action', (ev) => {
     startPomodoroCycle(f, b);
     showBubble(`Pomodoro iniciado: ${f}min foco / ${b}min pausa.`, 5000);
   } else if (p.action === 'add') {
-    const mins = Number(p.minutes || 0);
+    const delayMs = Number(p.delayMs || (Number(p.minutes || 0) * 60 * 1000));
     const label = String(p.label || '').trim() || 'seu lembrete';
-    if (mins > 0 && mins <= 1440) {
-      scheduleReminder(label, Math.round(mins * 60 * 1000));
-      showBubble(`Lembrete marcado em ${formatRemainingMs(mins * 60 * 1000)}: "${label}".`, 5000);
+    if (Number.isFinite(delayMs) && delayMs >= 1000 && delayMs <= 48 * 3600 * 1000) {
+      scheduleReminder(label, Math.round(delayMs));
+      showBubble(`Lembrete marcado em ${formatRemainingMs(delayMs)}: "${label}".`, 5000);
     }
   } else if (p.action === 'cancel') {
     const id = Number(p.id);
