@@ -25,28 +25,28 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 
 ---
 
-## Novidades da v1.3.0
+## Novidades da v1.3.x (até v1.3.6)
 
 > [!TIP]
-> **Destaque da versão:** a Aster agora roda tanto **100% offline no Ollama** quanto **na nuvem (Gemini, Groq, OpenRouter ou OpenAI)** com fallback automático — basta colar sua API Key e testar direto nas Configurações, sem precisar de placa de vídeo dedicada.
+> **Destaque da versão:** a Aster agora roda tanto **100% offline no Ollama** quanto **na nuvem (Groq, Gemini, OpenRouter ou OpenAI)**, atualiza sozinha em **1 clique** direto pelas Configurações, escuta sua voz direto com **`Alt + V`** (sem precisar instalar Python usando Groq) e abre qualquer jogo instalado na sua **Steam**.
 
 | Novidade | O que muda na prática |
 | :--- | :--- |
-| **IA Híbrida + Botão Testar IA** | Escolha entre **Ollama local** ou **API na Nuvem** (presets prontos para Gemini, Groq, OpenRouter e OpenAI) com streaming SSE, visão de tela e teste de conexão com latência em `ms`. |
-| **Voz frase por frase** | A síntese do Fish Audio dispara em paralelo assim que cada frase fecha no streaming, cortando a espera até a primeira fala. |
-| **Modo Jogo ao vivo** | Acompanha partidas de **League of Legends** em tempo real (First Blood, Multikills, Dragão, Barão, Vitória/Derrota) e reconhece jogos populares (Valorant, CS2, Minecraft, Elden Ring, GTA V, etc.). |
-| **Pomodoro & Timers visuais** | Painel ao vivo em **Integrações → Pomodoro & Timers** para iniciar ciclos `25/5` ou `50/10`, criar lembretes com voz e acompanhar a contagem regressiva. |
-| **Personalização completa** | Defina **como a Aster deve te chamar** (`USER_NAME`), ajuste o **tamanho dela na tela** (`75%`–`130%`), curta o balanço rítmico no modo música e use sprites animados (`.webp`/`.gif`). |
-| **Configurações redesenhadas** | Janela redimensionável (`760×600`) em 5 abas (**Cérebro (IA)**, **Voz**, **Visual**, **Integrações** e **Memória**) com bolinhas de status inteligentes e aviso de alterações não salvas. |
+| **Auto-atualizador de 1 clique** | Verifica automaticamente novas versões no GitHub, avisa no balão e atualiza + reinicia sozinha pelo botão **Atualizar agora** nas Configurações — sem nunca apagar `.env`, memórias, `docs/` ou skins próprias. |
+| **IA Híbrida + Listar modelos** | Escolha **Ollama local** ou **API na Nuvem** (Groq, Gemini, OpenRouter, OpenAI) com streaming SSE, visão de tela, botão **Listar modelos** (dropdown automático) e **Testar IA** (latência em `ms`). |
+| **Voz direta (`Alt + V`) + Groq Whisper** | Aperte **`Alt + V`** de qualquer tela ou jogo para falar direto (sem dizer `"Aster"`). Quem usa Groq ganha microfone nativo sem instalar Python, além de síntese Fish Audio frase por frase. |
+| **Modo Jogo Leve + Steam** | Acompanha partidas de **League of Legends** ao vivo, reconhece jogos populares, abre **qualquer jogo instalado na Steam** pelo nome (*"abre o Stardew Valley"*) e desativa blur/animações pesadas em jogo para preservar o FPS. |
+| **Pomodoro, Fechar Apps & Personalização** | Painel visual de **Pomodoro & Timers**, fechar apps (*"fecha o Spotify"*), nome configurável (`USER_NAME`), tamanho na tela (`75%`–`130%`), balanço rítmico na música e suporte a `.webp`/`.gif`. |
+| **Instalação simplificada (`Instalar_Extras.bat`)** | Pacote `.zip` organizado com pasta `Aster-Companion\` e assistente temático de 1 clique para criar atalho na Área de Trabalho e instalar opcionais sem abrir terminal. |
 
 <details>
-<summary><strong>Ver todas as melhorias técnicas da v1.3.0</strong></summary>
+<summary><strong>Ver todas as melhorias técnicas da linha v1.3.x</strong></summary>
 
-* **Sprites otimizados para `720px` (2× Retina):** redução de ~67% no tamanho dos arquivos PNG sem perda visual na tela, com padrão atualizado também no `processar_skin.py`.
-* **Contexto e busca local aprimorados:** janela de contexto expandida (`num_ctx: 4096`, histórico de 18 mensagens) e stemming em PT-BR no RAG local (`docs/`).
-* **Gemini 2.5 sem atraso de raciocínio:** envio automático de `reasoning_effort: "none"` para respostas rápidas no `gemini-2.5-flash`.
-* **Importador de skins (Beta):** defringe aprimorado na borda do `rembg`, compensação de contraste/saturação para frames de `.mp4` e proteção contra race condition nos `Blob` URLs.
-* **Guia completo de uso:** todos os comandos, frases naturais e atalhos documentados em [COMANDOS.md](COMANDOS.md).
+* **Sprites otimizados para `720px` (2× Retina):** redução de ~67% no tamanho dos PNGs sem perda visual, com padrão atualizado também no `processar_skin.py`.
+* **Lip-sync 90% mais leve:** trocado de `requestAnimationFrame` para intervalo de `120ms`, reduzindo o uso de GPU do WebView2.
+* **Voz mais natural:** pausa de corte aumentada para `1,6s`, frase máxima de `15s` e `prompt` de vocabulário no Whisper para acertar `"Aster"`.
+* **Contexto e busca local aprimorados:** `num_ctx: 4096`, histórico de 18 mensagens e stemming em PT-BR no RAG local (`docs/`).
+* **Configurações redesenhadas:** janela redimensionável (`760×600`) em 5 abas com links diretos para gerar chaves grátis e guia completo em [COMANDOS.md](COMANDOS.md).
 
 </details>
 
@@ -75,11 +75,11 @@ Clique no ícone de engrenagem (ou digite `/config`) → aba **Cérebro (IA)**:
 ### 3. Colocar seu nome, voz e skins (opcional)
 * **Seu nome:** aba **Memória** → preencha **"Como a Aster deve te chamar"** e clique em **Salvar Configurações**.
 * **Voz da Aster falando:** aba **Voz** → ative a voz, crie uma chave em [fish.audio](https://fish.audio), cole a **Chave Fish Audio** + **ID da Voz** e clique em **Testar Voz**.
-* **Microfone (falar *"Aster..."*):**
-  * Se você configurou **Groq** na aba **Cérebro (IA)**, basta clicar no botão de microfone — já funciona direto sem instalar nada.
-  * Para usar microfone **offline** sem Groq, instale **Python 3.12**, coloque `transcrever.py` e `requirements.txt` na pasta do `Aster.exe` e rode `python -m venv .venv` + `.\.venv\Scripts\pip install -r requirements.txt`.
+* **Microfone (falar direto com `Alt + V` ou dizendo *"Aster..."*):**
+  * Se você configurou **Groq** na aba **Cérebro (IA)**, basta apertar **`Alt + V`** (ou clicar no microfone) — já funciona direto sem instalar nada.
+  * Para usar microfone **offline** sem Groq (ou o importador beta de skins), basta abrir o **`Instalar_Extras.bat`** que já vem na pasta e escolher a opção no menu.
 * **Skins:** a **Skin Natalina** já vem inclusa. Para adicionar outras skins baixadas, clique em **Visual → Skins → Abrir pasta skins**, cole a pasta da skin lá dentro e clique em **Atualizar**.
-* **Como atualizar no futuro sem perder nada:** feche a Aster, extraia o `.zip` novo **por cima da mesma pasta** (substituindo o `Aster.exe`). Suas chaves (`.env`), memórias (`memory.json`), `docs/` e skins extras nunca são apagados.
+* **Como atualizar no futuro (1 clique, sem perder nada):** a própria Aster avisa quando sair versão nova — basta abrir **Configurações** e clicar em **Atualizar agora** (ou em **Verificar atualizações**). Ela baixa, atualiza e reinicia sozinha preservando 100% do seu `.env`, `memory.json`, `docs/`, `.venv/` e todas as suas skins próprias.
 
 Veja todos os comandos e atalhos em [COMANDOS.md](COMANDOS.md).
 
@@ -170,8 +170,11 @@ Aster-Companion/
 │   │   ├── docs.rs       # Busca local em documentos (RAG com stemming PT-BR)
 │   │   ├── games.rs      # Modo Jogo (API ao vivo do LoL + detecção de jogos)
 │   │   ├── skins.rs      # Listagem, criação, checklist, importador beta e troca de skins ao vivo
-│   │   └── voice.rs      # Worker Python (faster-whisper STT) e síntese Fish Audio (TTS)
+│   │   ├── updater.rs    # Verificação de versão no GitHub e auto-atualizador de 1 clique
+│   │   └── voice.rs      # Groq Whisper (nuvem), faster-whisper (offline) e Fish Audio (TTS)
 │   └── tauri.conf.json
+├── Instalar_Extras.bat   # Assistente temático de 1 clique (atalho, microfone offline, importador)
+├── pack_release.ps1      # Empacotador automático da Release (.zip organizado)
 ├── transcrever.py        # Worker offline de Speech-to-Text (faster-whisper)
 ├── processar_skin.py     # Importador/processador local de skins (Beta)
 ├── build_exe.ps1         # Script de build release -> Aster.exe
