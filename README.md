@@ -7,7 +7,7 @@
 Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Rust + HTML/CSS/JS)** com foco em baixo consumo de recursos, animações interativas estilo *desktop pet* e automação nativa do sistema com IA híbrida.
 
 <p>
-  <a href="https://github.com/kiobz1x/aster-companion/releases"><img src="https://img.shields.io/badge/versão-v1.3.6-7c3aed?style=flat-square" alt="Versão v1.3.6" /></a>
+  <a href="https://github.com/kiobz1x/aster-companion/releases"><img src="https://img.shields.io/badge/versão-v1.3.7-7c3aed?style=flat-square" alt="Versão v1.3.7" /></a>
   <img src="https://img.shields.io/badge/Windows-11-18181b?style=flat-square&logo=windows11&logoColor=c4b5fd" alt="Windows 11" />
   <img src="https://img.shields.io/badge/Tauri_v2-Rust-18181b?style=flat-square&logo=tauri&logoColor=c4b5fd" alt="Tauri v2 + Rust" />
   <img src="https://img.shields.io/badge/IA-Ollama_%7C_Nuvem-18181b?style=flat-square" alt="IA Híbrida" />
@@ -25,7 +25,7 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 
 ---
 
-## Novidades da v1.3.x (até v1.3.6)
+## Novidades da v1.3.x (até v1.3.7)
 
 > [!TIP]
 > **Destaque da versão:** a Aster agora roda tanto **100% offline no Ollama** quanto **na nuvem (Groq, Gemini, OpenRouter ou OpenAI)**, atualiza sozinha em **1 clique** direto pelas Configurações, escuta sua voz direto com **`Alt + V`** (sem precisar instalar Python usando Groq) e abre qualquer jogo instalado na sua **Steam**.
@@ -55,7 +55,7 @@ Assistente virtual de desktop para **Windows 11**, construída em **Tauri v2 (Ru
 ## Download e Instalação Rápida (Windows 11 — sem programar)
 
 > [!IMPORTANT]
-> Na página de [Releases](https://github.com/kiobz1x/aster-companion/releases), baixe **APENAS** o arquivo **`Aster-Companion-v1.3.6-win64.zip`** (não precisa baixar o *Source code*).
+> Na página de [Releases](https://github.com/kiobz1x/aster-companion/releases), baixe **APENAS** o arquivo **`Aster-Companion-v1.3.7-win64.zip`** (não precisa baixar o *Source code*).
 
 ### 1. Abrir a Aster
 1. Extraia o `.zip` — ele já cria uma pasta organizada **`Aster-Companion\`** com tudo dentro.

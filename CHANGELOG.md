@@ -2,6 +2,13 @@
 
 Todas as mudanças relevantes do projeto são documentadas neste arquivo.
 
+## [1.3.7] - 2026-11-27
+
+### Melhorias
+- **Pomodoro & Timers com unidades flexíveis:** adicionado seletor `min / h / seg` ao lado do campo de tempo e parser inteligente que reconhece diretamente `2h`, `30s`, `15m`, `1h30m` ou horário fixo (`22:30`).
+
+---
+
 ## [1.3.6] - 2026-11-27
 
 ### Voz & Atalhos
