@@ -2822,3 +2822,14 @@ setTimeout(async () => {
     }
   } catch (_) {}
 }, 1600);
+
+// Verifica silenciosamente se há nova versão disponível no GitHub
+setTimeout(async () => {
+  if (!invoke) return;
+  try {
+    const info = await invoke('check_for_update');
+    if (info?.has_update && !isSpeaking && !isThinking) {
+      showBubble(`Saiu a versão v${info.latest_version} da Aster! Abre as Configurações pra atualizar com 1 clique.`, 11000);
+    }
+  } catch (_) {}
+}, 5000);

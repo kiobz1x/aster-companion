@@ -1,6 +1,6 @@
 {
   "name": "aster-companion",
-  "version": "1.3.3",
+  "version": "1.3.5",
   "description": "Aster Companion - Assistente de Desktop para Windows 11 (Tauri v2)",
   "scripts": {
     "dev": "tauri dev",

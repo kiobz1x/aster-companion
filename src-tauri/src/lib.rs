@@ -6,6 +6,7 @@ mod games;
 mod media;
 mod memory;
 mod skins;
+mod updater;
 mod voice;
 
 use serde::{Deserialize, Serialize};
@@ -996,6 +997,8 @@ pub fn run() {
             media::get_now_playing,
             games::get_lol_state,
             games::detect_known_game,
+            updater::check_for_update,
+            updater::install_update,
         ])
         .build(tauri::generate_context!())
         .expect("erro ao construir Aster Companion");

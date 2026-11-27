@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do projeto são documentadas neste arquivo.
 
+## [1.3.5] - 2026-11-27
+
+### Novos Recursos
+- **Auto-atualizador de 1 clique (`updater.rs`):** ao abrir a Aster, verifica automaticamente a última Release no GitHub, avisa no balão e exibe um banner nas Configurações com botão **"Atualizar agora"** — baixa, substitui os arquivos do app (preservando 100% do `.env`, `memory.json`, `docs/`, `.venv/` e skins próprias) e reinicia sozinha.
+- **Abrir qualquer jogo instalado na Steam automaticamente:** ao pedir *"abre o Stardew Valley"*, *"abre o Elden Ring"*, etc., a Aster lê os manifestos da sua biblioteca Steam (em todos os HDs/SSDs via `libraryfolders.vdf`) e abre direto via `steam://rungameid/<ID>`.
+- **Assistente `Instalar_Extras.bat` temático (roxo e preto) + pacote `.zip` organizado:** ao extrair o `.zip`, todos os arquivos já vêm dentro de `Aster-Companion/` com menu interativo de 1 clique para criar atalho na Área de Trabalho e instalar opcionais (Microfone Offline e Importador de Skins Beta) sem precisar digitar comandos.
+
+---
+
 ## [1.3.3] - 2026-11-27
 
 ### Performance & Jogos

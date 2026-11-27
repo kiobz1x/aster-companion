@@ -207,8 +207,138 @@ pub fn open_app(name: String) -> Result<(), String> {
         _ => None,
     };
 
+fn parse_vdf_quoted_value(line: &str, key: &str) -> Option<String> {
+    let mut parts = line.split('"');
+    let _ = parts.next()?;
+    let k = parts.next()?;
+    if !k.eq_ignore_ascii_case(key) {
+        return None;
+    }
+    let _ = parts.next()?;
+    let val = parts.next()?;
+    Some(val.replace("\\\\", "\\"))
+}
+
+fn norm_game_query(s: &str) -> String {
+    normalize_app_key(s)
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { ' ' })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn collect_steamapps_dirs() -> Vec<std::path::PathBuf> {
+    let mut dirs: Vec<std::path::PathBuf> = Vec::new();
+    let defaults = [
+        r"C:\Program Files (x86)\Steam\steamapps",
+        r"C:\Program Files\Steam\steamapps",
+        r"D:\SteamLibrary\steamapps",
+        r"E:\SteamLibrary\steamapps",
+    ];
+    for d in defaults {
+        let p = std::path::PathBuf::from(d);
+        if p.is_dir() && !dirs.contains(&p) {
+            dirs.push(p);
+        }
+    }
+
+    // Lê libraryfolders.vdf para descobrir bibliotecas da Steam em qualquer HD/SSD
+    for base in [
+        r"C:\Program Files (x86)\Steam\steamapps\libraryfolders.vdf",
+        r"C:\Program Files\Steam\steamapps\libraryfolders.vdf",
+    ] {
+        if let Ok(content) = std::fs::read_to_string(base) {
+            for line in content.lines() {
+                if let Some(lib_path) = parse_vdf_quoted_value(line, "path") {
+                    let sa = std::path::PathBuf::from(lib_path).join("steamapps");
+                    if sa.is_dir() && !dirs.contains(&sa) {
+                        dirs.push(sa);
+                    }
+                }
+            }
+        }
+    }
+    dirs
+}
+
+fn find_steam_game_appid(query: &str) -> Option<String> {
+    let q = norm_game_query(query);
+    if q.len() < 2 {
+        return None;
+    }
+    let q_words: Vec<&str> = q.split_whitespace().collect();
+    let mut best: Option<(u8, usize, String)> = None;
+
+    for dir in collect_steamapps_dirs() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let fname = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+            if !fname.starts_with("appmanifest_") || !fname.ends_with(".acf") {
+                continue;
+            }
+            let Ok(text) = std::fs::read_to_string(&path) else {
+                continue;
+            };
+            let mut appid = String::new();
+            let mut gname = String::new();
+            for line in text.lines() {
+                if appid.is_empty() {
+                    if let Some(v) = parse_vdf_quoted_value(line, "appid") {
+                        appid = v;
+                    }
+                }
+                if gname.is_empty() {
+                    if let Some(v) = parse_vdf_quoted_value(line, "name") {
+                        gname = v;
+                    }
+                }
+                if !appid.is_empty() && !gname.is_empty() {
+                    break;
+                }
+            }
+            if appid.is_empty() || gname.is_empty() {
+                continue;
+            }
+            let n = norm_game_query(&gname);
+            if n.contains("steamworks common redistributables") || n.starts_with("proton ") {
+                continue;
+            }
+            let score = if n == q {
+                3
+            } else if n.starts_with(&q) || n.contains(&q) {
+                2
+            } else if !q_words.is_empty() && q_words.iter().all(|w| n.contains(w)) {
+                1
+            } else {
+                0
+            };
+            if score > 0 {
+                let replace = match &best {
+                    None => true,
+                    Some((bs, blen, _)) => score > *bs || (score == *bs && n.len() < *blen),
+                };
+                if replace {
+                    best = Some((score, n.len(), appid));
+                }
+            }
+        }
+    }
+
+    best.map(|(_, _, id)| id)
+}
+
     if let Some(target) = mapped {
         return shell_open(target);
+    }
+
+    // Tenta abrir qualquer jogo instalado na biblioteca Steam pelo nome
+    if let Some(appid) = find_steam_game_appid(&name) {
+        return shell_open(&format!("steam://rungameid/{appid}"));
     }
 
     // Fallback seguro: apenas nomes simples alfanuméricos sem metacaracteres de shell

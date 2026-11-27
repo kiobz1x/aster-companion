@@ -91,7 +91,7 @@ Referência completa de todos os comandos slash (`/`), comandos por frase natura
 | Play / Pause | *"pausa"*, *"despausa"*, *"play"*, *"para a música"* | Pausa ou retoma a mídia atual do Windows |
 | Trocar faixa | *"próxima"*, *"pula"*, *"volta"*, *"música anterior"* | Avança ou volta a faixa atual |
 | Volume | *"muta"*, *"silencia"*, *"aumenta o volume"*, *"abaixa o volume"* | Controla o volume e o mudo do sistema via Win32 |
-| Abrir aplicativo | *"abre o brave"*, *"abre o discord"*, *"abre o vscode"*, *"abre a calculadora"* | Abre aplicativos instalados no PC (aceita atalhos como `spot` e `dc`) |
+| Abrir aplicativo ou jogo Steam | *"abre o brave"*, *"abre o discord"*, *"abre o stardew valley"*, *"abre o elden ring"* | Abre aplicativos instalados no Windows (aceita `spot`/`dc`) e **qualquer jogo instalado na sua Steam** automaticamente |
 | Fechar aplicativo | *"fecha o spotify"*, *"fecha o discord"*, *"fecha o navegador"*, *"fecha a calculadora"* | Encerra aplicativos conhecidos abertos no Windows de forma segura |
 | Abrir site / busca | *"pesquisa no youtube como configurar docker"*, *"abre o github"* | Abre URLs ou buscas diretamente no navegador padrão (via IA) |
 

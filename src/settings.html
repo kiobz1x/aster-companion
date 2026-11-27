@@ -572,6 +572,22 @@
       background: var(--sidebar);
     }
     #status-msg { font-size: 12px; color: var(--accent-soft); }
+
+    .update-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: 11px 14px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.24), rgba(var(--accent-rgb), 0.08));
+      border: 1px solid rgba(var(--accent-soft-rgb), 0.42);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+    }
+    .update-banner.visible { display: flex; }
+    .update-banner strong { font-size: 12.5px; color: var(--accent-text); display: block; }
+    .update-banner small { font-size: 11px; color: #d4d4d8; }
   </style>
 </head>
 <body>
@@ -582,7 +598,7 @@
       </div>
       <div class="brand-info">
         <h1>Aster</h1>
-        <span>Companion v1.3.3</span>
+        <span>Companion v1.3.5</span>
       </div>
     </div>
 
@@ -620,11 +636,24 @@
       <div class="health-row"><span>Nuvem</span><span id="dot-cloud" class="status-dot idle"></span></div>
       <div class="health-row"><span>Voz (TTS)</span><span id="dot-fish" class="status-dot idle"></span></div>
       <div class="health-row"><span>Hermes</span><span id="dot-hermes" class="status-dot idle"></span></div>
+      <button id="check-update-btn" class="btn btn-ghost btn-sm" type="button" style="margin-top:4px;width:100%;font-size:11px">
+        <span>Verificar atualizações</span>
+      </button>
     </div>
   </aside>
 
   <div class="content-wrap">
     <main>
+      <div id="update-banner" class="update-banner">
+        <div>
+          <strong id="update-title">Nova versão disponível</strong>
+          <small>Suas configurações, memórias e skins próprias continuam intactas.</small>
+        </div>
+        <div class="row">
+          <button id="update-notes-btn" class="btn btn-ghost btn-sm" type="button">Ver notas</button>
+          <button id="update-now-btn" class="btn btn-sm" type="button">Atualizar agora</button>
+        </div>
+      </div>
       <!-- 1. CÉREBRO (IA) -->
       <section id="tab-cerebro" class="panel active">
         <div>
@@ -1699,12 +1728,64 @@
       });
     });
 
+    const updateBanner = document.getElementById('update-banner');
+    const updateTitle = document.getElementById('update-title');
+    const updateNowBtn = document.getElementById('update-now-btn');
+    const updateNotesBtn = document.getElementById('update-notes-btn');
+    const checkUpdateBtn = document.getElementById('check-update-btn');
+    let latestUpdateInfo = null;
+
+    async function checkForUpdates(manual = false) {
+      if (!invoke) return;
+      if (manual) {
+        checkUpdateBtn.disabled = true;
+        setStatus('Verificando atualizações no GitHub...');
+      }
+      try {
+        const info = await invoke('check_for_update');
+        latestUpdateInfo = info;
+        if (info?.has_update) {
+          updateTitle.textContent = `Nova versão disponível: v${info.latest_version} (atual: v${info.current_version})`;
+          updateBanner.classList.add('visible');
+          updateNowBtn.style.display = info.download_url ? 'inline-flex' : 'none';
+          if (manual) setStatus(`Nova versão v${info.latest_version} disponível!`);
+        } else {
+          updateBanner.classList.remove('visible');
+          if (manual) setStatus(`Você já está na versão mais recente (v${info?.current_version || '1.3.3'}).`);
+        }
+      } catch (e) {
+        if (manual) setStatus(`Erro ao verificar atualizações: ${e}`, true);
+      } finally {
+        if (manual) checkUpdateBtn.disabled = false;
+      }
+    }
+
+    checkUpdateBtn.addEventListener('click', () => checkForUpdates(true));
+    updateNotesBtn.addEventListener('click', () => {
+      if (latestUpdateInfo?.release_url) {
+        invoke?.('open_url', { url: latestUpdateInfo.release_url })?.catch(() => {});
+      }
+    });
+    updateNowBtn.addEventListener('click', async () => {
+      if (!latestUpdateInfo?.download_url) return;
+      updateNowBtn.disabled = true;
+      setStatus('Baixando atualização e preparando reinício automático...');
+      try {
+        const msg = await invoke('install_update', { downloadUrl: latestUpdateInfo.download_url });
+        setStatus(msg || 'Atualizando...');
+      } catch (e) {
+        setStatus(`Erro na atualização: ${e}`, true);
+        updateNowBtn.disabled = false;
+      }
+    });
+
     loadSettings();
     loadMemories();
     loadDocs();
     loadSkins();
     refreshHealth();
     requestRemindersList();
+    checkForUpdates(false);
   </script>
 </body>
 </html>
