@@ -198,5 +198,6 @@ Aster-Companion/
 ## Licença & Créditos
 
 * **Código-fonte:** distribuído sob a [MIT License](LICENSE).
+* **Assinatura de código:** Free code signing provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
 * **Arte e identidade visual:** os sprites originais e a identidade visual da personagem **Aster** são de uso pessoal / não comercial.
 * Inspirado no projeto open-source [capri-desktop](https://github.com/lachydotmcg/capri-desktop).
